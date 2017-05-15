@@ -1,0 +1,3 @@
+This is a proof-of-concept circuit which quickly measures the capacitance of many pins through a series of multiplexers. Touching the end of one of the loose wires will (when properly calibrated) cause the corresponding LED to light up.
+
+This concept will form the basis of the "fretboard" for this guitar. Each fret will have six metal contacts (probably just bare wires) in lieu of strings, with each metal contact being connected to one channel of a 4051 multiplexer.
