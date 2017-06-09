@@ -5,44 +5,63 @@
 #include <SerialFlash.h>
 
 // GUItool: begin automatically generated code
-AudioSynthWaveform       waveform1;      //xy=103,126
-AudioSynthWaveform       waveform2;      //xy=104,170
-AudioSynthWaveform       waveform4;      //xy=104,267
-AudioSynthWaveform       waveform3;      //xy=106,220
-AudioSynthWaveform       waveform6;      //xy=106,366
-AudioSynthWaveform       waveform5;      //xy=107,318
-AudioEffectEnvelope      envelope1;      //xy=245,126
-AudioEffectEnvelope      envelope2;      //xy=245,168
-AudioEffectEnvelope      envelope3;      //xy=249,220
-AudioEffectEnvelope      envelope4;      //xy=249,267
-AudioEffectEnvelope      envelope5;      //xy=251,312
-AudioEffectEnvelope      envelope6;      //xy=253,358
-AudioMixer4              mixer1;         //xy=436,175
-AudioMixer4              mixer2;         //xy=437,308
-AudioMixer4              mixer3;         //xy=616,250
-AudioOutputI2S           i2s1;           //xy=782,248
-AudioConnection          patchCord1(waveform1, envelope1);
-AudioConnection          patchCord2(waveform2, envelope2);
-AudioConnection          patchCord3(waveform4, envelope4);
-AudioConnection          patchCord4(waveform3, envelope3);
-AudioConnection          patchCord5(waveform6, envelope6);
-AudioConnection          patchCord6(waveform5, envelope5);
-AudioConnection          patchCord7(envelope1, 0, mixer1, 0);
-AudioConnection          patchCord8(envelope2, 0, mixer1, 1);
-AudioConnection          patchCord9(envelope3, 0, mixer1, 2);
-AudioConnection          patchCord10(envelope4, 0, mixer2, 0);
-AudioConnection          patchCord11(envelope5, 0, mixer2, 1);
-AudioConnection          patchCord12(envelope6, 0, mixer2, 2);
-AudioConnection          patchCord13(mixer1, 0, mixer3, 0);
-AudioConnection          patchCord14(mixer2, 0, mixer3, 1);
-AudioConnection          patchCord15(mixer3, 0, i2s1, 0);
-AudioConnection          patchCord16(mixer3, 0, i2s1, 1);
+AudioSynthWaveformDc     dc1;            //xy=69,458
+AudioSynthWaveform       waveform1;      //xy=72,122
+AudioSynthWaveform       waveform2;      //xy=73,166
+AudioSynthWaveform       waveform4;      //xy=73,263
+AudioSynthWaveform       waveform3;      //xy=75,216
+AudioSynthWaveform       waveform6;      //xy=75,362
+AudioSynthWaveform       waveform5;      //xy=76,314
+AudioEffectEnvelope      envelope8;      //xy=210,466
+AudioEffectEnvelope      envelope1;      //xy=214,122
+AudioEffectEnvelope      envelope2;      //xy=214,164
+AudioEffectEnvelope      envelope7;      //xy=214,422
+AudioEffectEnvelope      envelope3;      //xy=218,216
+AudioEffectEnvelope      envelope4;      //xy=218,263
+AudioEffectEnvelope      envelope5;      //xy=220,308
+AudioEffectEnvelope      envelope6;      //xy=222,354
+AudioFilterStateVariable filter6;        //xy=369,352
+AudioFilterStateVariable filter5;        //xy=371,305
+AudioFilterStateVariable filter2;        //xy=372,165
+AudioFilterStateVariable filter1;        //xy=374,119
+AudioFilterStateVariable filter4;        //xy=374,258
+AudioFilterStateVariable filter3;        //xy=376,210
+AudioMixer4              mixer1;         //xy=568,175
+AudioMixer4              mixer2;         //xy=569,308
+AudioMixer4              mixer3;         //xy=688,249
+AudioOutputI2S           i2s1;           //xy=810,248
+AudioConnection          patchCord1(dc1, envelope7);
+AudioConnection          patchCord2(dc1, envelope8);
+AudioConnection          patchCord3(waveform1, envelope1);
+AudioConnection          patchCord4(waveform2, envelope2);
+AudioConnection          patchCord5(waveform4, envelope4);
+AudioConnection          patchCord6(waveform3, envelope3);
+AudioConnection          patchCord7(waveform6, envelope6);
+AudioConnection          patchCord8(waveform5, envelope5);
+AudioConnection          patchCord9(envelope8, 0, filter2, 1);
+AudioConnection          patchCord10(envelope1, 0, filter1, 0);
+AudioConnection          patchCord11(envelope2, 0, filter2, 0);
+AudioConnection          patchCord12(envelope7, 0, filter1, 1);
+AudioConnection          patchCord13(envelope3, 0, filter3, 0);
+AudioConnection          patchCord14(envelope4, 0, filter4, 0);
+AudioConnection          patchCord15(envelope5, 0, filter5, 0);
+AudioConnection          patchCord16(envelope6, 0, filter6, 0);
+AudioConnection          patchCord17(filter6, 0, mixer2, 2);
+AudioConnection          patchCord18(filter5, 0, mixer2, 1);
+AudioConnection          patchCord19(filter2, 0, mixer1, 1);
+AudioConnection          patchCord20(filter1, 0, mixer1, 0);
+AudioConnection          patchCord21(filter4, 0, mixer2, 0);
+AudioConnection          patchCord22(filter3, 0, mixer1, 2);
+AudioConnection          patchCord23(mixer1, 0, mixer3, 0);
+AudioConnection          patchCord24(mixer2, 0, mixer3, 1);
+AudioConnection          patchCord25(mixer3, 0, i2s1, 0);
+AudioConnection          patchCord26(mixer3, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=397,36
 // GUItool: end automatically generated code
 
 
 void setup() {
-  AudioMemory(10);
+  AudioMemory(20);
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.3);
 
@@ -54,28 +73,36 @@ void setup() {
   waveform4.begin(0.1,getFreq(35),waveform);
   waveform5.begin(0.1,getFreq(39),waveform);
   waveform6.begin(0.1,getFreq(44),waveform);
+
+  envelope1.release(800);
+  envelope7.sustain(0.2);
+  envelope7.decay(500);
+  envelope7.release(500);
+  envelope8.sustain(0.2);
+  envelope8.decay(500);
+
+  dc1.amplitude(1.0);
+
+  filter1.resonance(2.0);
+  filter1.frequency(200);
+  filter1.octaveControl(4);
+  filter2.resonance(2.0);
+  filter2.frequency(200);
+  filter2.octaveControl(4);
 }
 
+bool touchStatus = false;
 void loop() {
-  envelope1.noteOn();
-  delay(500);
-  envelope2.noteOn();
-  delay(500);
-  envelope3.noteOn();
-  delay(500);
-  envelope4.noteOn();
-  delay(500);
-  envelope5.noteOn();
-  delay(500);
-  envelope6.noteOn();
-  delay(500);
-  envelope1.noteOff();
-  envelope2.noteOff();
-  envelope3.noteOff();
-  envelope4.noteOff();
-  envelope5.noteOff();
-  envelope6.noteOff();
-  delay(1000);
+  bool isTouched = touchRead(16) > 3000;
+  if(!touchStatus && isTouched) {
+    envelope1.noteOn();
+    envelope7.noteOn();
+  }
+  else if(touchStatus && !isTouched) {
+    envelope1.noteOff();
+    envelope7.noteOff();
+  }
+  touchStatus = isTouched;
 }
 
 // unnecessary?
