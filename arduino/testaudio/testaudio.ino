@@ -89,20 +89,54 @@ void setup() {
   filter2.resonance(2.0);
   filter2.frequency(200);
   filter2.octaveControl(4);
+
+  pinMode(20, OUTPUT);
+  pinMode(21, OUTPUT);
+  pinMode(17, OUTPUT);
+
+  Serial.begin(9600);
 }
 
-bool touchStatus = false;
+byte touchStatus;
+bool thisStatus;
+bool thisTouched;
 void loop() {
-  bool isTouched = touchRead(16) > 3000;
-  if(!touchStatus && isTouched) {
-    envelope1.noteOn();
-    envelope7.noteOn();
+  for(int j=0;j<8;j++) {
+    digitalWrite(20, bitRead(j,0));
+    digitalWrite(21, bitRead(j,1));
+    digitalWrite(17, bitRead(j,2));
+    for(int k=0;k<9;k++) {
+      touchRead(16);
+      for(int i=0;i<3;i++) {
+        digitalWrite(21, bitRead(i, 0));
+        digitalWrite(20, bitRead(i, 1));
+        thisTouched = touchRead(16) > 3000;
+        thisStatus = bitRead(touchStatus, i);
+        if(i == 0) {
+          if(!thisStatus && thisTouched) {
+            envelope1.noteOn();
+            envelope7.noteOn();
+          }
+          else if(thisStatus && !thisTouched) {
+            envelope1.noteOff();
+            envelope7.noteOff();
+          }
+        }
+        if(i == 1) {
+          if(!thisStatus && thisTouched) {
+            envelope2.noteOn();
+            envelope8.noteOn();
+          }
+          else if(thisStatus && !thisTouched) {
+            envelope2.noteOff();
+            envelope8.noteOff();
+          }
+        }
+        bitWrite(touchStatus, i, thisTouched);
+      }
+    }
   }
-  else if(touchStatus && !isTouched) {
-    envelope1.noteOff();
-    envelope7.noteOff();
-  }
-  touchStatus = isTouched;
+  //Serial.println(AudioMemoryUsageMax());
 }
 
 // unnecessary?
