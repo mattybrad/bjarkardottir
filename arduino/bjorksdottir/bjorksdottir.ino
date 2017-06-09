@@ -131,141 +131,138 @@ AudioConnection          patchCord64(mixer3, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=732.3571472167969,49.57144260406494
 // GUItool: end automatically generated code
 
+// define how many things there are
+const int NUM_FRET_GROUPS = 9;
+const int NUM_FRETS = 12;
+
+// define pins
+int FRET_GROUP_SELECT_PINS[3] = {2,3,4};
+int FRET_CHANNEL_SELECT_PINS[3] = {5,6,7};
+int TOUCH_PINS[2] = {16,17};
+
+// lookup tables
+int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
+  {1,2,3,4,5,6,7,8},
+  {9,10,11,12,1,2,3,4},
+  {5,6,7,8,9,10,11,12},
+  {1,2,3,4,5,6,7,8},
+  {9,10,11,12,1,2,3,4},
+  {5,6,7,8,9,10,11,12},
+  {1,2,3,4,5,6,7,8},
+  {9,10,11,12,1,2,3,4},
+  {5,6,7,8,9,10,11,12}
+};
+int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {2,2,2,2,2,2,2,2},
+  {2,2,2,2,3,3,3,3},
+  {3,3,3,3,3,3,3,3},
+  {4,4,4,4,4,4,4,4},
+  {4,4,4,4,5,5,5,5},
+  {5,5,5,5,5,5,5,5}
+};
+
+bool strings[6];
+
+AudioSynthWaveform* oscillators[18];
 
 void setup() {
   AudioMemory(50);
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
 
+  // initialise the DC source for the filter envelopes
   dc1.amplitude(1.0);
 
-  int waveform = WAVEFORM_SQUARE;
-               
-  waveform1.begin(0.03,getFreq(20),waveform);
-  waveform4.begin(0.03,getFreq(25),waveform);
-  waveform7.begin(0.03,getFreq(30),waveform);
-  waveform10.begin(0.03,getFreq(35),waveform);
-  waveform13.begin(0.03,getFreq(39),waveform);
-  waveform16.begin(0.03,getFreq(44),waveform);
+  pinMode(FRET_GROUP_SELECT_PINS[0], OUTPUT);
+  pinMode(FRET_GROUP_SELECT_PINS[1], OUTPUT);
+  pinMode(FRET_GROUP_SELECT_PINS[2], OUTPUT);
+   
+  oscillators[0] = &waveform1;
+  oscillators[0]->begin(0.1,getFreq(44),WAVEFORM_SQUARE);
 
-  waveform2.begin(0.03,getFreq(20+12),waveform);
-  waveform5.begin(0.03,getFreq(25+12),waveform);
-  waveform8.begin(0.03,getFreq(30+12),waveform);
-  waveform11.begin(0.03,getFreq(35+12),waveform);
-  waveform14.begin(0.03,getFreq(39+12),waveform);
-  waveform17.begin(0.03,getFreq(44+12),waveform);
-
-  waveform3.begin(0.03,getFreq(20+24),waveform);
-  waveform6.begin(0.03,getFreq(25+24),waveform);
-  waveform9.begin(0.03,getFreq(30+24),waveform);
-  waveform12.begin(0.03,getFreq(35+24),waveform);
-  waveform15.begin(0.03,getFreq(39+24),waveform);
-  waveform18.begin(0.03,getFreq(44+24),waveform);
-
-  filter1.frequency(500);
-  filter2.frequency(500);
-  filter3.frequency(500);
-  filter4.frequency(500);
-  filter5.frequency(500);
-  filter6.frequency(500);
-
-  filter1.resonance(3.0);
-  filter1.octaveControl(2.5);
-  filter2.resonance(3.0);
-  filter2.octaveControl(2.5);
-  filter3.resonance(3.0);
-  filter3.octaveControl(2.5);
-  filter4.resonance(3.0);
-  filter4.octaveControl(2.5);
-  filter5.resonance(3.0);
-  filter5.octaveControl(2.5);
-  filter6.resonance(3.0);
-  filter6.octaveControl(2.5);
-
-  Serial.begin(9600);
-
-  envelope19.sustain(0.3);
-  envelope19.decay(500);
-  envelope20.sustain(0.3);
-  envelope20.decay(500);
-  envelope21.sustain(0.3);
-  envelope21.decay(500);
-  envelope22.sustain(0.3);
-  envelope22.decay(500);
-  envelope23.sustain(0.3);
-  envelope23.decay(500);
-  envelope24.sustain(0.3);
-  envelope24.decay(500);
-
+  
 }
 
 void loop() {
-  envelope1.noteOn();
-  envelope19.noteOn();
-  delay(30);
-  envelope2.noteOn();
-  delay(30);
-  envelope3.noteOn();
-  delay(1000);
-  envelope4.noteOn();
-  envelope20.noteOn();
-  delay(30);
-  envelope5.noteOn();
-  delay(30);
-  envelope6.noteOn();
-  delay(1000);
-  envelope7.noteOn();
-  envelope21.noteOn();
-  delay(30);
-  envelope8.noteOn();
-  delay(30);
-  envelope9.noteOn();
-  delay(1000);
-  envelope10.noteOn();
-  envelope22.noteOn();
-  delay(30);
-  envelope11.noteOn();
-  delay(30);
-  envelope12.noteOn();
-  delay(1000);
-  envelope13.noteOn();
-  envelope23.noteOn();
-  delay(30);
-  envelope14.noteOn();
-  delay(30);
-  envelope15.noteOn();
-  delay(1000);
-  envelope16.noteOn();
-  envelope24.noteOn();
-  delay(30);
-  envelope17.noteOn();
-  delay(30);
-  envelope18.noteOn();
-  delay(1000);
-  envelope1.noteOff();
-  envelope2.noteOff();
-  envelope3.noteOff();
-  envelope4.noteOff();
-  envelope5.noteOff();
-  envelope6.noteOff();
-  envelope7.noteOff();
-  envelope8.noteOff();
-  envelope9.noteOff();
-  envelope10.noteOff();
-  envelope11.noteOff();
-  envelope12.noteOff();
-  envelope13.noteOff();
-  envelope14.noteOff();
-  envelope15.noteOff();
-  envelope16.noteOff();
-  envelope17.noteOff();
-  envelope18.noteOff();
 
-  Serial.println(AudioMemoryUsageMax());
+  int capacitance;
+  bool fretTouched;
+  int stringPositions[6] = {0,0,0,0,0,0};
+  int thisString;
+  int thisFret;
+
+  // 9 iterations, 1 for each multiplexer
+  for(int j = 0; j < 9; j ++) {
+    
+    digitalWrite(FRET_GROUP_SELECT_PINS[0], bitRead(j%5, 0));
+    digitalWrite(FRET_GROUP_SELECT_PINS[1], bitRead(j%5, 1));
+    digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(j%5, 2));
+
+    // 8 iterations, 1 for each multiplexer channel
+    for(int i = 0; i < 8; i ++) {
+      digitalWrite(FRET_CHANNEL_SELECT_PINS[0], bitRead(i, 0));
+      digitalWrite(FRET_CHANNEL_SELECT_PINS[1], bitRead(i, 1));
+      digitalWrite(FRET_CHANNEL_SELECT_PINS[2], bitRead(i, 2));
+
+      thisString = STRING_LOOKUP[j][i];
+      thisFret = FRET_LOOKUP[j][i];
+      
+      capacitance = fakeTouchRead(j*8+i);
+      fretTouched = capacitance > 3000;
+      if(fretTouched) {
+        stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+      }
+      
+    }
+  }
+
+  // this part will be inside the loop for speed, for now it's here for simplicity
+  // check for string plucks
+  bool isTouched;
+  for(int i = 0; i < 3; i ++) {
+    digitalWrite(FRET_GROUP_SELECT_PINS[0], bitRead(i, 0));
+    digitalWrite(FRET_GROUP_SELECT_PINS[1], bitRead(i, 1));
+    digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(i, 2));
+    
+    // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
+    isTouched = touchRead(TOUCH_PINS[1]) > 3000;
+    if(!strings[i] && isTouched) {
+      // string has just been pressed
+      Serial.println("PRESSED:");
+      Serial.println(i);
+    } else if(strings[i] && !isTouched) {
+      // string has been released
+      Serial.println("RELEASED:");
+      Serial.println(i);
+    }
+    strings[i] = isTouched;
+  }
+
+  for(int i = 0; i < 6; i ++) {
+    //Serial.print(stringPositions[i]);
+    //Serial.print(" ");
+  }
+  //Serial.print("\n");
+
+  //delay(500);
 }
 
 float getFreq(float noteNum) {
   return pow(2, (noteNum-49)/12) * 440;
 }
 
+int fakeTouchRead(int pin) {
+  return pin == 18 ? 4000 : 2000;
+}
+
+void pluckString() {
+  
+}
+
+void muteString() {
+  
+}
 
