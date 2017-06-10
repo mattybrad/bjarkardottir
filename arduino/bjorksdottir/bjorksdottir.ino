@@ -164,7 +164,14 @@ int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
   {5,5,5,5,5,5,5,5}
 };
 
-bool strings[6];
+// define knob/sensor numbers
+const int AMP_ENV_ATTACK = 0;
+const int AMP_ENV_DECAY = 1;
+const int AMP_ENV_SUSTAIN = 2;
+const int AMP_ENV_RELEASE = 3;
+
+bool strings[6] = {false,false,false,false,false,false};
+int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -239,7 +246,7 @@ void loop() {
 
   // set frequency of oscillators
   for(int i=0; i<6; i++) {
-    oscillators[i]->frequency(getFreq(44+stringPositions[i]+i*5));
+    oscillators[i]->frequency(getFreq(32+stringPositions[i]+i*5));
   }
 
   // this part will be inside the big loop for speed, for now it's here for simplicity
@@ -251,7 +258,7 @@ void loop() {
     digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(i, 2));
     
     // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-    isTouched = touchRead(TOUCH_PINS[1]) > 3000;
+    isTouched = touchRead(TOUCH_PINS[1]) > 2500;
     if(!strings[i] && isTouched) {
       // string has just been pressed
       Serial.println("PRESSED:");
@@ -266,13 +273,13 @@ void loop() {
     strings[i] = isTouched;
   }
 
-  for(int i = 0; i < 6; i ++) {
-    //Serial.print(stringPositions[i]);
-    //Serial.print(" ");
+  // again, this will be in the big loop for speed at some point
+  // checking knob values
+  for(int i=0; i<8; i++) {
+    for(int j=0; j<4; j++) {
+      knobValues[j*4+i] = analogRead(12);
+    }
   }
-  //Serial.print("\n");
-
-  //delay(500);
 }
 
 float getFreq(float noteNum) {
