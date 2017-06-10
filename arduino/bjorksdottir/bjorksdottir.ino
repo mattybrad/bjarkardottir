@@ -167,6 +167,7 @@ int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
 bool strings[6];
 
 AudioSynthWaveform* oscillators[18];
+AudioEffectEnvelope* envelopes[18];
 
 void setup() {
   AudioMemory(50);
@@ -181,7 +182,24 @@ void setup() {
   pinMode(FRET_GROUP_SELECT_PINS[2], OUTPUT);
    
   oscillators[0] = &waveform1;
-  oscillators[0]->begin(0.1,getFreq(44),WAVEFORM_SQUARE);
+  oscillators[1] = &waveform4;
+  oscillators[2] = &waveform7;
+  oscillators[3] = &waveform10;
+  oscillators[4] = &waveform13;
+  oscillators[5] = &waveform16;
+  envelopes[0] = &envelope1;
+  envelopes[1] = &envelope4;
+  envelopes[2] = &envelope7;
+  envelopes[3] = &envelope10;
+  envelopes[4] = &envelope13;
+  envelopes[5] = &envelope16;
+  for(int i=0;i<6;i++) {
+    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
+    envelopes[i]->sustain(0);
+    envelopes[i]->decay(5000);
+    envelopes[i]->release(0.2);
+  }
+  
 
   
 }
@@ -219,7 +237,12 @@ void loop() {
     }
   }
 
-  // this part will be inside the loop for speed, for now it's here for simplicity
+  // set frequency of oscillators
+  for(int i=0; i<6; i++) {
+    oscillators[i]->frequency(getFreq(44+stringPositions[i]+i*5));
+  }
+
+  // this part will be inside the big loop for speed, for now it's here for simplicity
   // check for string plucks
   bool isTouched;
   for(int i = 0; i < 3; i ++) {
@@ -233,10 +256,12 @@ void loop() {
       // string has just been pressed
       Serial.println("PRESSED:");
       Serial.println(i);
+      muteString(i);
     } else if(strings[i] && !isTouched) {
       // string has been released
       Serial.println("RELEASED:");
       Serial.println(i);
+      pluckString(i);
     }
     strings[i] = isTouched;
   }
@@ -255,14 +280,14 @@ float getFreq(float noteNum) {
 }
 
 int fakeTouchRead(int pin) {
-  return pin == 18 ? 4000 : 2000;
+  return pin == 2 || pin == 13 ? 4000 : 2000;
 }
 
-void pluckString() {
-  
+void pluckString(int string) {
+  envelopes[string]->noteOn();
 }
 
-void muteString() {
-  
+void muteString(int string) {
+  envelopes[string]->noteOff();
 }
 
