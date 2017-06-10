@@ -221,8 +221,8 @@ void setup() {
   
   lfo1.begin(0.5,440,WAVEFORM_SQUARE);
   dc2.amplitude(0.5);
-  bitcrusher1.bits(8);
-  bitcrusher1.sampleRate(11000);
+  bitcrusher1.bits(16);
+  bitcrusher1.sampleRate(44100);
   
 }
 
@@ -292,9 +292,11 @@ void loop() {
   // checking knob values
   for(int i=0; i<8; i++) {
     for(int j=0; j<4; j++) {
-      knobValues[j*4+i] = analogRead(12);
+      knobValues[j*4+i] = analogRead(20);
     }
   }
+  //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
+  lfo1.frequency(map(knobValues[0],0,1023,1,1000));
 }
 
 float getFreq(float noteNum) {
