@@ -60,10 +60,15 @@ AudioFilterStateVariable filter2;        //xy=711.1071548461914,238.571443557739
 AudioFilterStateVariable filter6;        //xy=714.3571548461914,641.8214511871338
 AudioFilterStateVariable filter5;        //xy=715.1071548461914,536.0714492797852
 AudioFilterStateVariable filter4;        //xy=716.8571548461914,430.3214473724365
+AudioSynthWaveform       lfo1;     //xy=842.6190147399902,690.9522972106934
+AudioSynthWaveformDc     dc2;            //xy=853.333309173584,755.0000495910645
 AudioMixer4              mixer1;         //xy=894.6071586608887,217.3214454650879
 AudioMixer4              mixer2;         //xy=894.3571586608887,512.8214492797852
-AudioMixer4              mixer3;         //xy=1014.6071586608887,356.3214454650879
-AudioOutputI2S           i2s1;           //xy=1152.857162475586,355.3214454650879
+AudioMixer4              mixer10;        //xy=1013.3333168029785,613.3333568572998
+AudioMixer4              mixer3;         //xy=1027.46435546875,353.46428298950195
+AudioEffectMultiply      vca1;      //xy=1153.3333778381348,451.6666750907898
+AudioEffectBitcrusher    bitcrusher1;    //xy=1218.3333435058594,393.33333587646484
+AudioOutputI2S           i2s1;           //xy=1253.3335075378418,330.32148361206055
 AudioConnection          patchCord1(dc1, envelope19);
 AudioConnection          patchCord2(dc1, envelope20);
 AudioConnection          patchCord3(dc1, envelope21);
@@ -124,12 +129,19 @@ AudioConnection          patchCord57(filter2, 0, mixer1, 1);
 AudioConnection          patchCord58(filter6, 0, mixer2, 2);
 AudioConnection          patchCord59(filter5, 0, mixer2, 1);
 AudioConnection          patchCord60(filter4, 0, mixer2, 0);
-AudioConnection          patchCord61(mixer1, 0, mixer3, 0);
-AudioConnection          patchCord62(mixer2, 0, mixer3, 1);
-AudioConnection          patchCord63(mixer3, 0, i2s1, 0);
-AudioConnection          patchCord64(mixer3, 0, i2s1, 1);
+AudioConnection          patchCord61(lfo1, 0, mixer10, 0);
+AudioConnection          patchCord62(dc2, 0, mixer10, 1);
+AudioConnection          patchCord63(mixer1, 0, mixer3, 0);
+AudioConnection          patchCord64(mixer2, 0, mixer3, 1);
+AudioConnection          patchCord65(mixer10, 0, vca1, 1);
+AudioConnection          patchCord66(mixer3, 0, vca1, 0);
+AudioConnection          patchCord67(vca1, bitcrusher1);
+AudioConnection          patchCord68(bitcrusher1, 0, i2s1, 1);
+AudioConnection          patchCord69(bitcrusher1, 0, i2s1, 0);
 AudioControlSGTL5000     sgtl5000_1;     //xy=732.3571472167969,49.57144260406494
 // GUItool: end automatically generated code
+
+
 
 // define how many things there are
 const int NUM_FRET_GROUPS = 9;
@@ -201,13 +213,16 @@ void setup() {
   envelopes[4] = &envelope13;
   envelopes[5] = &envelope16;
   for(int i=0;i<6;i++) {
-    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
+    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SAWTOOTH);
     envelopes[i]->sustain(0);
     envelopes[i]->decay(5000);
     envelopes[i]->release(0.2);
   }
   
-
+  lfo1.begin(0.5,440,WAVEFORM_SQUARE);
+  dc2.amplitude(0.5);
+  bitcrusher1.bits(8);
+  bitcrusher1.sampleRate(11000);
   
 }
 
@@ -296,5 +311,9 @@ void pluckString(int string) {
 
 void muteString(int string) {
   envelopes[string]->noteOff();
+}
+
+void scheduleEvent() {
+  
 }
 
