@@ -183,6 +183,8 @@ const int AMP_ENV_SUSTAIN = 2;
 const int AMP_ENV_RELEASE = 3;
 
 bool strings[6] = {false,false,false,false,false,false};
+float targetFrequencies[6] = {440,440,440,440,440,440};
+float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 AudioSynthWaveform* oscillators[18];
@@ -219,7 +221,7 @@ void setup() {
     envelopes[i]->release(0.2);
   }
   
-  lfo1.begin(0.5,440,WAVEFORM_SQUARE);
+  lfo1.begin(0,5,WAVEFORM_SINE);
   dc2.amplitude(0.5);
   bitcrusher1.bits(16);
   bitcrusher1.sampleRate(44100);
@@ -260,8 +262,19 @@ void loop() {
   }
 
   // set frequency of oscillators
+  float portamento = 0.3;
+  float deltaFreq;
   for(int i=0; i<6; i++) {
-    oscillators[i]->frequency(getFreq(32+stringPositions[i]+i*5));
+    targetFrequencies[i] = getFreq(32+stringPositions[i]+i*5);
+    deltaFreq = targetFrequencies[i] - currentFrequencies[i];
+    if(abs(deltaFreq) < portamento) {
+      currentFrequencies[i] = targetFrequencies[i];
+    } else if(deltaFreq > 0) {
+      currentFrequencies[i] += portamento;
+    } else {
+      currentFrequencies[i] -= portamento;
+    }
+    oscillators[i]->frequency(currentFrequencies[i]);
   }
 
   // this part will be inside the big loop for speed, for now it's here for simplicity
@@ -273,7 +286,7 @@ void loop() {
     digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(i, 2));
     
     // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-    isTouched = touchRead(TOUCH_PINS[1]) > 2500;
+    isTouched = touchRead(TOUCH_PINS[1]) > 3500;
     if(!strings[i] && isTouched) {
       // string has just been pressed
       Serial.println("PRESSED:");
@@ -292,11 +305,11 @@ void loop() {
   // checking knob values
   for(int i=0; i<8; i++) {
     for(int j=0; j<4; j++) {
-      knobValues[j*4+i] = analogRead(20);
+      //knobValues[j*4+i] = analogRead(20);
     }
   }
   //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
-  lfo1.frequency(map(knobValues[0],0,1023,1,1000));
+  //lfo1.frequency(map(knobValues[0],0,1023,1,1000));
 }
 
 float getFreq(float noteNum) {
@@ -304,7 +317,13 @@ float getFreq(float noteNum) {
 }
 
 int fakeTouchRead(int pin) {
-  return pin == 2 || pin == 13 ? 4000 : 2000;
+  int returnValue;
+  if(millis() % 6000 < 3000) {
+    returnValue = pin == 2 || pin == 13 ? 4000 : 2000;
+  } else {
+    returnValue = pin == 14 || pin == 25 ? 4000 : 2000;
+  }
+  return returnValue;
 }
 
 void pluckString(int string) {
