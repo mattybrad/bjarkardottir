@@ -155,6 +155,8 @@ int ANALOG_SENSOR_PINS[4] = {34,33,31,32};
 int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
+int STRING_MUX_PINS[6] = {3,0,1,2,4,6};
+//int STRING_MUX_LAYOUT[6] = {};
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -235,6 +237,7 @@ void setup() {
   
 }
 
+bool isTouched;
 void loop() {
 
   int capacitance;
@@ -259,13 +262,27 @@ void loop() {
       thisString = STRING_LOOKUP[i][j];
       thisFret = FRET_LOOKUP[i][j];
       
-      capacitance = fakeTouchRead(i*8+j);
-      //capacitance = touchRead(FRET_PIN);
+      //capacitance = fakeTouchRead(i*8+j);
+      capacitance = touchRead(FRET_PIN);
       fretTouched = capacitance > 9000;
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
       }
+
+      if(j<6) {
       
+        // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
+        isTouched = touchRead(STRING_PIN) > 6000;
+        if(!strings[j] && isTouched) {
+          // string has just been pressed
+          muteString(j);
+        } else if(strings[j] && !isTouched) {
+          // string has been released
+          pluckString(j);
+        }
+        strings[j] = isTouched;
+
+      }
     }
   }
 
@@ -283,31 +300,6 @@ void loop() {
       currentFrequencies[i] -= portamento;
     }
     oscillators[i]->frequency(currentFrequencies[i]);
-  }
-
-  // this part will be inside the big loop for speed, for now it's here for simplicity
-  // check for string plucks
-  int STRING_MUX_PINS[6] = {3,0,1,2,4,6};
-  bool isTouched;
-  for(int i = 0; i < 6; i ++) {
-    digitalWrite(SELECT_PINS_J[0], bitRead(STRING_MUX_PINS[i], 0));
-    digitalWrite(SELECT_PINS_J[1], bitRead(STRING_MUX_PINS[i], 1));
-    digitalWrite(SELECT_PINS_J[2], bitRead(STRING_MUX_PINS[i], 2));
-    
-    // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-    isTouched = touchRead(STRING_PIN) > 6000;
-    if(!strings[i] && isTouched) {
-      // string has just been pressed
-      //Serial.println("PRESSED:");
-      //Serial.println(i);
-      muteString(i);
-    } else if(strings[i] && !isTouched) {
-      // string has been released
-      //Serial.println("RELEASED:");
-      //Serial.println(i);
-      pluckString(i);
-    }
-    strings[i] = isTouched;
   }
 
   // again, this will be in the big loop for speed at some point
@@ -331,9 +323,9 @@ float getFreq(float noteNum) {
 int fakeTouchRead(int pin) {
   int returnValue;
   if(millis() % 6000 < 3000) {
-    returnValue = pin == 2 || pin == 13 ? 4000 : 2000;
+    returnValue = pin == 2 || pin == 13 ? 10000 : 2000;
   } else {
-    returnValue = pin == 14 || pin == 25 ? 4000 : 2000;
+    returnValue = pin == 14 || pin == 25 ? 10000 : 2000;
   }
   return returnValue;
 }
