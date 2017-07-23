@@ -244,7 +244,7 @@ void loop() {
   int thisFret;
 
   // 9 iterations, 1 for each multiplexer
-  for(int i = 0; i < 9; i ++) {
+  for(int i = 0; i < 8; i ++) {
     
     digitalWrite(SELECT_PINS_I[0], bitRead(i%5, 0));
     digitalWrite(SELECT_PINS_I[1], bitRead(i%5, 1));
@@ -260,7 +260,8 @@ void loop() {
       thisFret = FRET_LOOKUP[i][j];
       
       capacitance = fakeTouchRead(i*8+j);
-      fretTouched = capacitance > 3000;
+      //capacitance = touchRead(FRET_PIN);
+      fretTouched = capacitance > 9000;
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
       }
@@ -274,7 +275,7 @@ void loop() {
   for(int i=0; i<6; i++) {
     targetFrequencies[i] = getFreq(32+stringPositions[i]+i*5);
     deltaFreq = targetFrequencies[i] - currentFrequencies[i];
-    if(abs(deltaFreq) < portamento) {
+    if(true || abs(deltaFreq) < portamento) {
       currentFrequencies[i] = targetFrequencies[i];
     } else if(deltaFreq > 0) {
       currentFrequencies[i] += portamento;
@@ -297,13 +298,13 @@ void loop() {
     isTouched = touchRead(STRING_PIN) > 6000;
     if(!strings[i] && isTouched) {
       // string has just been pressed
-      Serial.println("PRESSED:");
-      Serial.println(i);
+      //Serial.println("PRESSED:");
+      //Serial.println(i);
       muteString(i);
     } else if(strings[i] && !isTouched) {
       // string has been released
-      Serial.println("RELEASED:");
-      Serial.println(i);
+      //Serial.println("RELEASED:");
+      //Serial.println(i);
       pluckString(i);
     }
     strings[i] = isTouched;
@@ -311,9 +312,12 @@ void loop() {
 
   // again, this will be in the big loop for speed at some point
   // checking knob values
-  for(int i=0; i<8; i++) {
+  for(int i=0; i<0; i++) {
+    digitalWrite(SELECT_PINS_I[0], bitRead(i%5, 0));
+    digitalWrite(SELECT_PINS_I[1], bitRead(i%5, 1));
+    digitalWrite(SELECT_PINS_I[2], bitRead(i%5, 2));
     for(int j=0; j<4; j++) {
-      //knobValues[j*4+i] = analogRead(20);
+      knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
     }
   }
   //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
