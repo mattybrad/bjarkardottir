@@ -215,7 +215,7 @@ void setup() {
   envelopes[4] = &envelope13;
   envelopes[5] = &envelope16;
   for(int i=0;i<6;i++) {
-    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SAWTOOTH);
+    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->sustain(0);
     envelopes[i]->decay(5000);
     envelopes[i]->release(0.2);
