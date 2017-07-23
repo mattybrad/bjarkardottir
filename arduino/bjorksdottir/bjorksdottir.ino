@@ -148,9 +148,13 @@ const int NUM_FRET_GROUPS = 9;
 const int NUM_FRETS = 12;
 
 // define pins
-int FRET_GROUP_SELECT_PINS[3] = {2,3,4};
-int FRET_CHANNEL_SELECT_PINS[3] = {5,6,7};
-int TOUCH_PINS[2] = {16,17};
+int SELECT_PINS_I[3] = {5,6,7};
+int SELECT_PINS_J[3] = {2,3,4};
+int DIGITAL_SENSOR_PIN = 39;
+int ANALOG_SENSOR_PINS[4] = {34,33,31,32};
+int PALM_PIN = 30;
+int STRING_PIN = 17;
+int FRET_PIN = 16;
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -198,9 +202,12 @@ void setup() {
   // initialise the DC source for the filter envelopes
   dc1.amplitude(1.0);
 
-  pinMode(FRET_GROUP_SELECT_PINS[0], OUTPUT);
-  pinMode(FRET_GROUP_SELECT_PINS[1], OUTPUT);
-  pinMode(FRET_GROUP_SELECT_PINS[2], OUTPUT);
+  pinMode(SELECT_PINS_I[0], OUTPUT);
+  pinMode(SELECT_PINS_I[1], OUTPUT);
+  pinMode(SELECT_PINS_I[2], OUTPUT);
+  pinMode(SELECT_PINS_J[0], OUTPUT);
+  pinMode(SELECT_PINS_J[1], OUTPUT);
+  pinMode(SELECT_PINS_J[2], OUTPUT);
    
   oscillators[0] = &waveform1;
   oscillators[1] = &waveform4;
@@ -237,22 +244,22 @@ void loop() {
   int thisFret;
 
   // 9 iterations, 1 for each multiplexer
-  for(int j = 0; j < 9; j ++) {
+  for(int i = 0; i < 9; i ++) {
     
-    digitalWrite(FRET_GROUP_SELECT_PINS[0], bitRead(j%5, 0));
-    digitalWrite(FRET_GROUP_SELECT_PINS[1], bitRead(j%5, 1));
-    digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(j%5, 2));
+    digitalWrite(SELECT_PINS_I[0], bitRead(i%5, 0));
+    digitalWrite(SELECT_PINS_I[1], bitRead(i%5, 1));
+    digitalWrite(SELECT_PINS_I[2], bitRead(i%5, 2));
 
     // 8 iterations, 1 for each multiplexer channel
-    for(int i = 0; i < 8; i ++) {
-      digitalWrite(FRET_CHANNEL_SELECT_PINS[0], bitRead(i, 0));
-      digitalWrite(FRET_CHANNEL_SELECT_PINS[1], bitRead(i, 1));
-      digitalWrite(FRET_CHANNEL_SELECT_PINS[2], bitRead(i, 2));
+    for(int j = 0; j < 8; j ++) {
+      digitalWrite(SELECT_PINS_J[0], bitRead(j, 0));
+      digitalWrite(SELECT_PINS_J[1], bitRead(j, 1));
+      digitalWrite(SELECT_PINS_J[2], bitRead(j, 2));
 
-      thisString = STRING_LOOKUP[j][i];
-      thisFret = FRET_LOOKUP[j][i];
+      thisString = STRING_LOOKUP[i][j];
+      thisFret = FRET_LOOKUP[i][j];
       
-      capacitance = fakeTouchRead(j*8+i);
+      capacitance = fakeTouchRead(i*8+j);
       fretTouched = capacitance > 3000;
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
@@ -279,14 +286,15 @@ void loop() {
 
   // this part will be inside the big loop for speed, for now it's here for simplicity
   // check for string plucks
+  int STRING_MUX_PINS[6] = {3,0,1,2,4,6};
   bool isTouched;
-  for(int i = 0; i < 3; i ++) {
-    digitalWrite(FRET_GROUP_SELECT_PINS[0], bitRead(i, 0));
-    digitalWrite(FRET_GROUP_SELECT_PINS[1], bitRead(i, 1));
-    digitalWrite(FRET_GROUP_SELECT_PINS[2], bitRead(i, 2));
+  for(int i = 0; i < 6; i ++) {
+    digitalWrite(SELECT_PINS_J[0], bitRead(STRING_MUX_PINS[i], 0));
+    digitalWrite(SELECT_PINS_J[1], bitRead(STRING_MUX_PINS[i], 1));
+    digitalWrite(SELECT_PINS_J[2], bitRead(STRING_MUX_PINS[i], 2));
     
     // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-    isTouched = touchRead(TOUCH_PINS[1]) > 3500;
+    isTouched = touchRead(STRING_PIN) > 6000;
     if(!strings[i] && isTouched) {
       // string has just been pressed
       Serial.println("PRESSED:");
