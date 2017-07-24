@@ -193,6 +193,9 @@ float targetFrequencies[6] = {440,440,440,440,440,440};
 float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
+int touchThreshold = 1500;
+int fretTouchThreshold = 2000;
+
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
 
@@ -234,10 +237,22 @@ void setup() {
   dc2.amplitude(0.5);
   bitcrusher1.bits(16);
   bitcrusher1.sampleRate(44100);
+
+  // calibration
+  digitalWrite(SELECT_PINS_I[0], LOW);
+  digitalWrite(SELECT_PINS_I[1], LOW);
+  digitalWrite(SELECT_PINS_I[2], LOW);
+  digitalWrite(SELECT_PINS_J[0], LOW);
+  digitalWrite(SELECT_PINS_J[1], LOW);
+  digitalWrite(SELECT_PINS_J[2], LOW);
+  Serial.println(touchRead(STRING_PIN));
+  Serial.println(touchRead(FRET_PIN));
   
 }
 
 bool isTouched;
+long timeStart;
+long timeTotal;
 void loop() {
 
   int capacitance;
@@ -245,6 +260,8 @@ void loop() {
   int stringPositions[6] = {0,0,0,0,0,0};
   int thisString;
   int thisFret;
+
+  timeStart = millis();
 
   // 9 iterations, 1 for each multiplexer
   for(int i = 0; i < 8; i ++) {
@@ -261,18 +278,21 @@ void loop() {
 
       thisString = STRING_LOOKUP[i][j];
       thisFret = FRET_LOOKUP[i][j];
-      
-      //capacitance = fakeTouchRead(i*8+j);
-      capacitance = touchRead(FRET_PIN);
-      fretTouched = capacitance > 9000;
-      if(fretTouched) {
-        stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+
+      // only 3 groups hooked up for now
+      if(i<3) {
+        //capacitance = fakeTouchRead(i*8+j);
+        capacitance = touchRead(FRET_PIN);
+        fretTouched = capacitance > fretTouchThreshold;
+        if(fretTouched) {
+          stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+        }
       }
 
       if(j<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        isTouched = touchRead(STRING_PIN) > 6000;
+        isTouched = touchRead(STRING_PIN) > touchThreshold;
         if(!strings[j] && isTouched) {
           // string has just been pressed
           muteString(j);
@@ -282,6 +302,10 @@ void loop() {
         }
         strings[j] = isTouched;
 
+      }
+
+      if(j<4) {
+        knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
       }
     }
   }
@@ -302,18 +326,11 @@ void loop() {
     oscillators[i]->frequency(currentFrequencies[i]);
   }
 
-  // again, this will be in the big loop for speed at some point
-  // checking knob values
-  for(int i=0; i<0; i++) {
-    digitalWrite(SELECT_PINS_I[0], bitRead(i%5, 0));
-    digitalWrite(SELECT_PINS_I[1], bitRead(i%5, 1));
-    digitalWrite(SELECT_PINS_I[2], bitRead(i%5, 2));
-    for(int j=0; j<4; j++) {
-      knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
-    }
-  }
   //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
   //lfo1.frequency(map(knobValues[0],0,1023,1,1000));
+
+  timeTotal = millis() - timeStart;
+  //Serial.println(timeTotal);
 }
 
 float getFreq(float noteNum) {
