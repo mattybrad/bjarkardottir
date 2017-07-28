@@ -155,7 +155,7 @@ int ANALOG_SENSOR_PINS[4] = {34,33,31,32};
 int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
-int STRING_MUX_PINS[6] = {3,0,1,2,4,6};
+int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 //int STRING_MUX_LAYOUT[6] = {};
 
 // lookup tables
@@ -193,7 +193,7 @@ float targetFrequencies[6] = {440,440,440,440,440,440};
 float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-int touchThreshold = 1500;
+int touchThreshold = 2000;
 int fretTouchThreshold = 2000;
 
 AudioSynthWaveform* oscillators[18];
@@ -239,14 +239,15 @@ void setup() {
   bitcrusher1.sampleRate(44100);
 
   // calibration
-  digitalWrite(SELECT_PINS_I[0], LOW);
-  digitalWrite(SELECT_PINS_I[1], LOW);
-  digitalWrite(SELECT_PINS_I[2], LOW);
-  digitalWrite(SELECT_PINS_J[0], LOW);
-  digitalWrite(SELECT_PINS_J[1], LOW);
-  digitalWrite(SELECT_PINS_J[2], LOW);
+  int testChannel = 6;
+  digitalWrite(SELECT_PINS_I[0], bitRead(testChannel, 0));
+  digitalWrite(SELECT_PINS_I[1], bitRead(testChannel, 1));
+  digitalWrite(SELECT_PINS_I[2], bitRead(testChannel, 2));
+  digitalWrite(SELECT_PINS_J[0], bitRead(testChannel, 0));
+  digitalWrite(SELECT_PINS_J[1], bitRead(testChannel, 1));
+  digitalWrite(SELECT_PINS_J[2], bitRead(testChannel, 2));
   Serial.println(touchRead(STRING_PIN));
-  Serial.println(touchRead(FRET_PIN));
+  //Serial.println(touchRead(FRET_PIN));
   
 }
 
@@ -260,6 +261,7 @@ void loop() {
   int stringPositions[6] = {0,0,0,0,0,0};
   int thisString;
   int thisFret;
+  long touchReading;
 
   timeStart = millis();
 
@@ -281,26 +283,29 @@ void loop() {
 
       // only 3 groups hooked up for now
       if(i<3) {
+        capacitance = 0;
         //capacitance = fakeTouchRead(i*8+j);
-        capacitance = touchRead(FRET_PIN);
+        //capacitance = touchRead(FRET_PIN);
         fretTouched = capacitance > fretTouchThreshold;
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
         }
       }
 
-      if(j<6) {
+      if(STRING_MUX_PINS[j]<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        isTouched = touchRead(STRING_PIN) > touchThreshold;
-        if(!strings[j] && isTouched) {
+        touchReading = touchRead(STRING_PIN);
+        touchReading = touchRead(STRING_PIN);
+        isTouched = touchReading > touchThreshold;
+        if(!strings[STRING_MUX_PINS[j]] && isTouched) {
           // string has just been pressed
-          muteString(j);
-        } else if(strings[j] && !isTouched) {
+          muteString(STRING_MUX_PINS[j]);
+        } else if(strings[STRING_MUX_PINS[j]] && !isTouched) {
           // string has been released
-          pluckString(j);
+          pluckString(STRING_MUX_PINS[j]);
         }
-        strings[j] = isTouched;
+        strings[STRING_MUX_PINS[j]] = isTouched;
 
       }
 
@@ -314,7 +319,7 @@ void loop() {
   float portamento = 0.3;
   float deltaFreq;
   for(int i=0; i<6; i++) {
-    targetFrequencies[i] = getFreq(32+stringPositions[i]+i*5);
+    targetFrequencies[i] = getFreq(32+stringPositions[i]+i*5+(i>3?-1:0));
     deltaFreq = targetFrequencies[i] - currentFrequencies[i];
     if(true || abs(deltaFreq) < portamento) {
       currentFrequencies[i] = targetFrequencies[i];
