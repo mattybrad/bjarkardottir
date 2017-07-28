@@ -193,8 +193,10 @@ float targetFrequencies[6] = {440,440,440,440,440,440};
 float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-int touchThreshold = 2000;
+int touchThreshold = 1500;
 int fretTouchThreshold = 2000;
+
+int touchTimeLimit = 100000;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -228,8 +230,8 @@ void setup() {
   envelopes[5] = &envelope16;
   for(int i=0;i<6;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
-    envelopes[i]->sustain(0);
-    envelopes[i]->decay(5000);
+    envelopes[i]->sustain(0.3);
+    envelopes[i]->decay(0.1);
     envelopes[i]->release(0.2);
   }
   
@@ -283,9 +285,9 @@ void loop() {
 
       // only 3 groups hooked up for now
       if(i<3) {
-        capacitance = 0;
         //capacitance = fakeTouchRead(i*8+j);
-        //capacitance = touchRead(FRET_PIN);
+        capacitance = touchRead(FRET_PIN);
+        capacitance = 0;
         fretTouched = capacitance > fretTouchThreshold;
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
@@ -295,9 +297,8 @@ void loop() {
       if(STRING_MUX_PINS[j]<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        touchReading = touchRead(STRING_PIN);
-        touchReading = touchRead(STRING_PIN);
-        isTouched = touchReading > touchThreshold;
+        touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
+        isTouched = touchReading > touchThreshold || touchReading < 0;
         if(!strings[STRING_MUX_PINS[j]] && isTouched) {
           // string has just been pressed
           muteString(STRING_MUX_PINS[j]);
@@ -335,7 +336,7 @@ void loop() {
   //lfo1.frequency(map(knobValues[0],0,1023,1,1000));
 
   timeTotal = millis() - timeStart;
-  //Serial.println(timeTotal);
+  Serial.println(timeTotal);
 }
 
 float getFreq(float noteNum) {
