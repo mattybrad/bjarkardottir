@@ -230,8 +230,8 @@ void setup() {
   envelopes[5] = &envelope16;
   for(int i=0;i<6;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
-    envelopes[i]->sustain(0.3);
-    envelopes[i]->decay(0.1);
+    envelopes[i]->sustain(0.1);
+    envelopes[i]->decay(0.05);
     envelopes[i]->release(0.2);
   }
   
