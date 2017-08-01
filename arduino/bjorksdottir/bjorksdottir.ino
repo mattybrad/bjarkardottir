@@ -156,6 +156,7 @@ int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
+int STRING_LIGHT_PINS[6] = {20,21,35,36,37,38};
 //int STRING_MUX_LAYOUT[6] = {};
 
 // lookup tables
@@ -192,6 +193,7 @@ bool strings[6] = {false,false,false,false,false,false};
 float targetFrequencies[6] = {440,440,440,440,440,440};
 float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int stringLights[6] = {0,0,0,0,0,0};
 
 int touchThreshold = 1500;
 int fretTouchThreshold = 2000;
@@ -208,6 +210,11 @@ void setup() {
 
   // initialise the DC source for the filter envelopes
   dc1.amplitude(1.0);
+
+  // init LED pins
+  for(int i=0;i<6;i++) {
+    pinMode(STRING_LIGHT_PINS[i], OUTPUT);
+  }
 
   pinMode(SELECT_PINS_I[0], OUTPUT);
   pinMode(SELECT_PINS_I[1], OUTPUT);
@@ -330,6 +337,14 @@ void loop() {
       currentFrequencies[i] -= portamento;
     }
     oscillators[i]->frequency(currentFrequencies[i]);
+
+    // fade LEDs
+    if(stringLights[i]>0) {
+      stringLights[i] -= 10;
+      analogWrite(STRING_LIGHT_PINS[i], stringLights[i]);
+    } else {
+      digitalWrite(STRING_LIGHT_PINS[i], LOW);
+    }
   }
 
   //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
@@ -355,6 +370,7 @@ int fakeTouchRead(int pin) {
 
 void pluckString(int string) {
   envelopes[string]->noteOn();
+  stringLights[string] = 255;
 }
 
 void muteString(int string) {
