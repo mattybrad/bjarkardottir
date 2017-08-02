@@ -195,13 +195,15 @@ float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int stringLights[6] = {0,0,0,0,0,0};
 
-int touchThreshold = 1500;
+int touchThreshold = 1200;
 int fretTouchThreshold = 2000;
 
 int touchTimeLimit = 100000;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
+AudioFilterStateVariable* filters[6];
+AudioEffectEnvelope* filterEnvelopes[6];
 
 void setup() {
   AudioMemory(50);
@@ -235,11 +237,30 @@ void setup() {
   envelopes[3] = &envelope10;
   envelopes[4] = &envelope13;
   envelopes[5] = &envelope16;
+  filters[0] = &filter1;
+  filters[1] = &filter2;
+  filters[2] = &filter3;
+  filters[3] = &filter4;
+  filters[4] = &filter5;
+  filters[5] = &filter6;
+  filterEnvelopes[0] = &envelope19;
+  filterEnvelopes[1] = &envelope20;
+  filterEnvelopes[2] = &envelope21;
+  filterEnvelopes[3] = &envelope22;
+  filterEnvelopes[4] = &envelope23;
+  filterEnvelopes[5] = &envelope24;
   for(int i=0;i<6;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->sustain(0.1);
-    envelopes[i]->decay(0.05);
-    envelopes[i]->release(0.2);
+    envelopes[i]->decay(5);
+    envelopes[i]->release(50);
+    filters[i]->frequency(100);
+    filters[i]->resonance(1.5);
+    filters[i]->octaveControl(10);
+    filterEnvelopes[i]->attack(0);
+    filterEnvelopes[i]->sustain(0.3);
+    filterEnvelopes[i]->decay(2000);
+    filterEnvelopes[i]->release(1000);
   }
   
   lfo1.begin(0,5,WAVEFORM_SINE);
@@ -370,6 +391,7 @@ int fakeTouchRead(int pin) {
 
 void pluckString(int string) {
   envelopes[string]->noteOn();
+  filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
 }
 
