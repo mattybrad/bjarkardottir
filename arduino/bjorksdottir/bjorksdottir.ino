@@ -212,7 +212,25 @@ int touchThreshold = 1200;
 int fretTouchThreshold = 2000;
 int touchTimeLimit = 100000;
 
+int nextRelease[6] = {-1,-1,-1,-1,-1,-1};
+
 float maxPeak = 0.0;
+
+// adjustable values
+float ampAttack = 0;
+float ampDecay = 50;
+float ampSustain = 0.3;
+float ampReleaseLong = 15000; // for when a string is plucked
+float ampReleaseShort = 50; // for when a string is muted
+float filterAttack = 500;
+float filterDecay = 2000;
+float filterSustain = 0.5;
+float filterRelease = 2000;
+float lfo1Amount = 1;
+float lfo2Amount = 1;
+float distortionLevel = 0;
+float filterCutoff = 200;
+float filterResonance = 1.5;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -222,7 +240,7 @@ AudioEffectEnvelope* filterEnvelopes[6];
 float WAVESHAPE_EXAMPLE[17] = {
   -0.3,
   -0.1,
-  0.4,
+  -0.4,
   -0.1,
   -0.5,
   -0.9,
@@ -234,7 +252,7 @@ float WAVESHAPE_EXAMPLE[17] = {
   0.5,
   0.6,
   0.1,
-  -0.2,
+  0.2,
   0.5,
   0.2
 };
@@ -284,30 +302,31 @@ void setup() {
   filterEnvelopes[4] = &envelope23;
   filterEnvelopes[5] = &envelope24;
   for(int i=0;i<6;i++) {
-    oscillators[i]->begin(0.2,getFreq(44+5*i),WAVEFORM_SINE);
-    envelopes[i]->sustain(0);
-    envelopes[i]->decay(5000);
-    envelopes[i]->release(50);
-    filters[i]->frequency(100);
-    filters[i]->resonance(1.5);
+    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
+    envelopes[i]->sustain(ampAttack);
+    envelopes[i]->sustain(ampSustain);
+    envelopes[i]->decay(ampDecay);
+    envelopes[i]->release(ampReleaseLong);
+    filters[i]->frequency(filterCutoff);
+    filters[i]->resonance(filterResonance);
     filters[i]->octaveControl(10);
-    filterEnvelopes[i]->attack(0);
-    filterEnvelopes[i]->sustain(0.3);
-    filterEnvelopes[i]->decay(2000);
-    filterEnvelopes[i]->release(1000);
+    filterEnvelopes[i]->attack(filterAttack);
+    filterEnvelopes[i]->decay(filterDecay);
+    filterEnvelopes[i]->sustain(filterSustain);
+    filterEnvelopes[i]->release(filterRelease);
   }
   
-  lfo2.begin(0.5,0.05,WAVEFORM_SINE);
-  lfo1.amplitude(0.1);
-  lfo1.frequency(5);
+  lfo2.begin(0.5,2.6,WAVEFORM_SQUARE);
+  lfo1.amplitude(0.3);
+  lfo1.frequency(4.6);
   mixer10.gain(0,0);
   //mixer10.gain(1,0);
   dc2.amplitude(1);
   bitcrusher1.bits(16);
   bitcrusher1.sampleRate(44100);
   waveshape1.shape(WAVESHAPE_EXAMPLE, 17);
-  mixer12.gain(0,0.5);
-  mixer12.gain(1,0.5);
+  mixer12.gain(0,0.5*distortionLevel);
+  mixer12.gain(1,0.5*(1-distortionLevel));
 
   // calibration
   int testChannel = 6;
@@ -374,6 +393,8 @@ void loop() {
         } else if(strings[STRING_MUX_PINS[j]] && !isTouched) {
           // string has been released
           pluckString(STRING_MUX_PINS[j]);
+        } else if(nextRelease[STRING_MUX_PINS[j]] != -1 && millis() > nextRelease[STRING_MUX_PINS[j]]) {
+          envelopes[STRING_MUX_PINS[j]]->noteOff();
         }
         strings[STRING_MUX_PINS[j]] = isTouched;
 
@@ -441,9 +462,12 @@ void pluckString(int string) {
   envelopes[string]->noteOn();
   filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
+  envelopes[string]->release(ampReleaseLong);
+  nextRelease[string] = millis() + 1000; // temp
 }
 
 void muteString(int string) {
+  envelopes[string]->release(ampReleaseShort);
   envelopes[string]->noteOff();
 }
 
