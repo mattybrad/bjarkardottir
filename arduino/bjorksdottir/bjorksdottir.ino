@@ -170,7 +170,6 @@ int STRING_PIN = 17;
 int FRET_PIN = 16;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
-//int STRING_MUX_LAYOUT[6] = {};
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -232,12 +231,14 @@ float lfo2Amount = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
-float octaveDelay = 50;
+float octaveDelay = 150;
+float octaveFade = 0.6; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
 AudioFilterStateVariable* filters[6];
 AudioEffectEnvelope* filterEnvelopes[6];
+AudioMixer4* stringMixers[6];
 
 float WAVESHAPE_EXAMPLE[17] = {
   -0.3,
@@ -327,6 +328,12 @@ void setup() {
   filterEnvelopes[3] = &envelope22;
   filterEnvelopes[4] = &envelope23;
   filterEnvelopes[5] = &envelope24;
+  stringMixers[0] = &mixer4;
+  stringMixers[1] = &mixer5;
+  stringMixers[2] = &mixer6;
+  stringMixers[3] = &mixer7;
+  stringMixers[4] = &mixer8;
+  stringMixers[5] = &mixer9;
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->sustain(ampAttack);
@@ -447,6 +454,8 @@ void loop() {
         knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
       }
     }
+
+    adjustOctaveVolumes();
   }
 
   // set frequency of oscillators
@@ -524,7 +533,10 @@ void muteString(int string) {
   envelopes[string+12]->noteOff();
 }
 
-void scheduleEvent() {
-  
+void adjustOctaveVolumes() {
+  for(int i=0;i<6;i++) {
+    stringMixers[i]->gain(1,min(1,octaveFade*2));
+    stringMixers[i]->gain(2,max(0,octaveFade*2-1));
+  }
 }
 
