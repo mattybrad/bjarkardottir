@@ -212,8 +212,8 @@ int touchThreshold = 1200;
 int fretTouchThreshold = 2000;
 int touchTimeLimit = 100000;
 
-int nextRelease[12] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
-int nextNote[12] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+int nextRelease[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 
 float maxPeak = 0.0;
 
@@ -232,7 +232,7 @@ float lfo2Amount = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
-float octaveDelay = 30;
+float octaveDelay = 50;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -291,6 +291,12 @@ void setup() {
   oscillators[9] = &waveform11;
   oscillators[10] = &waveform14;
   oscillators[11] = &waveform17;
+  oscillators[12] = &waveform3;
+  oscillators[13] = &waveform6;
+  oscillators[14] = &waveform9;
+  oscillators[15] = &waveform12;
+  oscillators[16] = &waveform15;
+  oscillators[17] = &waveform18;
   envelopes[0] = &envelope1;
   envelopes[1] = &envelope4;
   envelopes[2] = &envelope7;
@@ -303,6 +309,12 @@ void setup() {
   envelopes[9] = &envelope11;
   envelopes[10] = &envelope14;
   envelopes[11] = &envelope17;
+  envelopes[12] = &envelope3;
+  envelopes[13] = &envelope6;
+  envelopes[14] = &envelope9;
+  envelopes[15] = &envelope12;
+  envelopes[16] = &envelope15;
+  envelopes[17] = &envelope18;
   filters[0] = &filter1;
   filters[1] = &filter2;
   filters[2] = &filter3;
@@ -315,7 +327,7 @@ void setup() {
   filterEnvelopes[3] = &envelope22;
   filterEnvelopes[4] = &envelope23;
   filterEnvelopes[5] = &envelope24;
-  for(int i=0;i<12;i++) {
+  for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->sustain(ampAttack);
     envelopes[i]->sustain(ampSustain);
@@ -412,16 +424,22 @@ void loop() {
         } else if(strings[thisString] && !isTouched) {
           // string has been released
           pluckString(thisString);
-        } else if(nextRelease[thisString] != -1 && millis() > nextRelease[thisString]) {
+        } else if(nextRelease[thisString] != -1 && millis() >= nextRelease[thisString]) {
           envelopes[thisString]->noteOff();
           envelopes[thisString+6]->noteOff();
+          envelopes[thisString+12]->noteOff();
           nextRelease[thisString] = - 1;
           nextRelease[thisString+6] = -1;
+          nextRelease[thisString+12] = -1;
         }
         strings[thisString] = isTouched;
-        if(nextNote[thisString+6] != -1 && millis() > nextNote[thisString+6]) {
+        if(nextNote[thisString+6] != -1 && millis() >= nextNote[thisString+6]) {
           envelopes[thisString+6]->noteOn();
           nextNote[thisString+6] = -1;
+        }
+        if(nextNote[thisString+12] != -1 && millis() >= nextNote[thisString+12]) {
+          envelopes[thisString+12]->noteOn();
+          nextNote[thisString+12] = -1;
         }
       }
 
@@ -446,6 +464,7 @@ void loop() {
     }
     oscillators[i]->frequency(currentFrequencies[i]);
     oscillators[i+6]->frequency(2*currentFrequencies[i]);
+    oscillators[i+12]->frequency(4*currentFrequencies[i]);
 
     // fade LEDs
     if(stringLights[i]>0) {
@@ -490,8 +509,10 @@ void pluckString(int string) {
   stringLights[string] = 255;
   envelopes[string]->release(ampReleaseLong);
   envelopes[string+6]->release(ampReleaseLong);
+  envelopes[string+12]->release(ampReleaseLong);
   nextRelease[string] = millis() + 1000; // temp
   nextNote[string+6] = millis() + octaveDelay;
+  nextNote[string+12] = millis() + 2 * octaveDelay;
 }
 
 void muteString(int string) {
@@ -499,6 +520,8 @@ void muteString(int string) {
   envelopes[string]->noteOff();
   envelopes[string+6]->release(ampReleaseShort);
   envelopes[string+6]->noteOff();
+  envelopes[string+12]->release(ampReleaseShort);
+  envelopes[string+12]->noteOff();
 }
 
 void scheduleEvent() {
