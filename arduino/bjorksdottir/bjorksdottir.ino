@@ -212,8 +212,8 @@ int touchThreshold = 1200;
 int fretTouchThreshold = 2000;
 int touchTimeLimit = 100000;
 
-int nextRelease[6] = {-1,-1,-1,-1,-1,-1};
-int nextOctave[6] = {-1,-1,-1,-1,-1,-1};
+int nextRelease[12] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+int nextNote[12] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 
 float maxPeak = 0.0;
 
@@ -221,10 +221,10 @@ float maxPeak = 0.0;
 float ampAttack = 0;
 float ampDecay = 50;
 float ampSustain = 0.3;
-float ampReleaseLong = 15000; // for when a string is plucked
+float ampReleaseLong = 4000; // for when a string is plucked
 float ampReleaseShort = 50; // for when a string is muted
-float filterAttack = 500;
-float filterDecay = 2000;
+float filterAttack = 0;
+float filterDecay = 100;
 float filterSustain = 0.5;
 float filterRelease = 2000;
 float lfo1Amount = 1;
@@ -232,7 +232,7 @@ float lfo2Amount = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
-float octaveDelay = 250;
+float octaveDelay = 30;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -361,6 +361,7 @@ void setup() {
 bool isTouched;
 long timeStart;
 long timeTotal;
+int thisString;
 void loop() {
 
   int capacitance;
@@ -399,21 +400,29 @@ void loop() {
         }
       }
 
-      if(STRING_MUX_PINS[j]<6) {
+      thisString = STRING_MUX_PINS[j];
+      if(thisString<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
         touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
         isTouched = touchReading > touchThreshold || touchReading < 0;
-        if(!strings[STRING_MUX_PINS[j]] && isTouched) {
+        if(!strings[thisString] && isTouched) {
           // string has just been pressed
-          muteString(STRING_MUX_PINS[j]);
-        } else if(strings[STRING_MUX_PINS[j]] && !isTouched) {
+          muteString(thisString);
+        } else if(strings[thisString] && !isTouched) {
           // string has been released
-          pluckString(STRING_MUX_PINS[j]);
-        } else if(nextRelease[STRING_MUX_PINS[j]] != -1 && millis() > nextRelease[STRING_MUX_PINS[j]]) {
-          envelopes[STRING_MUX_PINS[j]]->noteOff();
+          pluckString(thisString);
+        } else if(nextRelease[thisString] != -1 && millis() > nextRelease[thisString]) {
+          envelopes[thisString]->noteOff();
+          envelopes[thisString+6]->noteOff();
+          nextRelease[thisString] = - 1;
+          nextRelease[thisString+6] = -1;
         }
-        strings[STRING_MUX_PINS[j]] = isTouched;
+        strings[thisString] = isTouched;
+        if(nextNote[thisString+6] != -1 && millis() > nextNote[thisString+6]) {
+          envelopes[thisString+6]->noteOn();
+          nextNote[thisString+6] = -1;
+        }
       }
 
       if(j<4) {
@@ -477,17 +486,19 @@ int fakeTouchRead(int pin) {
 
 void pluckString(int string) {
   envelopes[string]->noteOn();
-  envelopes[string+6]->noteOn();
   filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
   envelopes[string]->release(ampReleaseLong);
   envelopes[string+6]->release(ampReleaseLong);
   nextRelease[string] = millis() + 1000; // temp
+  nextNote[string+6] = millis() + octaveDelay;
 }
 
 void muteString(int string) {
   envelopes[string]->release(ampReleaseShort);
   envelopes[string]->noteOff();
+  envelopes[string+6]->release(ampReleaseShort);
+  envelopes[string+6]->noteOff();
 }
 
 void scheduleEvent() {
