@@ -213,6 +213,7 @@ int fretTouchThreshold = 2000;
 int touchTimeLimit = 100000;
 
 int nextRelease[6] = {-1,-1,-1,-1,-1,-1};
+int nextOctave[6] = {-1,-1,-1,-1,-1,-1};
 
 float maxPeak = 0.0;
 
@@ -231,6 +232,7 @@ float lfo2Amount = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
+float octaveDelay = 250;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -283,12 +285,24 @@ void setup() {
   oscillators[3] = &waveform10;
   oscillators[4] = &waveform13;
   oscillators[5] = &waveform16;
+  oscillators[6] = &waveform2;
+  oscillators[7] = &waveform5;
+  oscillators[8] = &waveform8;
+  oscillators[9] = &waveform11;
+  oscillators[10] = &waveform14;
+  oscillators[11] = &waveform17;
   envelopes[0] = &envelope1;
   envelopes[1] = &envelope4;
   envelopes[2] = &envelope7;
   envelopes[3] = &envelope10;
   envelopes[4] = &envelope13;
   envelopes[5] = &envelope16;
+  envelopes[6] = &envelope2;
+  envelopes[7] = &envelope5;
+  envelopes[8] = &envelope8;
+  envelopes[9] = &envelope11;
+  envelopes[10] = &envelope14;
+  envelopes[11] = &envelope17;
   filters[0] = &filter1;
   filters[1] = &filter2;
   filters[2] = &filter3;
@@ -301,26 +315,29 @@ void setup() {
   filterEnvelopes[3] = &envelope22;
   filterEnvelopes[4] = &envelope23;
   filterEnvelopes[5] = &envelope24;
-  for(int i=0;i<6;i++) {
+  for(int i=0;i<12;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->sustain(ampAttack);
     envelopes[i]->sustain(ampSustain);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->release(ampReleaseLong);
-    filters[i]->frequency(filterCutoff);
-    filters[i]->resonance(filterResonance);
-    filters[i]->octaveControl(10);
-    filterEnvelopes[i]->attack(filterAttack);
-    filterEnvelopes[i]->decay(filterDecay);
-    filterEnvelopes[i]->sustain(filterSustain);
-    filterEnvelopes[i]->release(filterRelease);
+    if(i<6) {
+      filters[i]->frequency(filterCutoff);
+      filters[i]->resonance(filterResonance);
+      filters[i]->octaveControl(10);
+      filterEnvelopes[i]->attack(filterAttack);
+      filterEnvelopes[i]->decay(filterDecay);
+      filterEnvelopes[i]->sustain(filterSustain);
+      filterEnvelopes[i]->release(filterRelease);
+    }
   }
   
-  lfo2.begin(0.5,2.6,WAVEFORM_SQUARE);
-  lfo1.amplitude(0.3);
-  lfo1.frequency(4.6);
+  //lfo2.begin(0,2.6,WAVEFORM_SQUARE);
+  lfo1.amplitude(1);
+  lfo1.frequency(440);
+  mixer11.gain(0,0);
   mixer10.gain(0,0);
-  //mixer10.gain(1,0);
+  mixer10.gain(1,1);
   dc2.amplitude(1);
   bitcrusher1.bits(16);
   bitcrusher1.sampleRate(44100);
@@ -397,7 +414,6 @@ void loop() {
           envelopes[STRING_MUX_PINS[j]]->noteOff();
         }
         strings[STRING_MUX_PINS[j]] = isTouched;
-
       }
 
       if(j<4) {
@@ -410,7 +426,7 @@ void loop() {
   float portamento = 0.3;
   float deltaFreq;
   for(int i=0; i<6; i++) {
-    targetFrequencies[i] = getFreq(32+stringPositions[i]+i*5+(i>3?-1:0));
+    targetFrequencies[i] = getFreq(20+stringPositions[i]+i*5+(i>3?-1:0));
     deltaFreq = targetFrequencies[i] - currentFrequencies[i];
     if(true || abs(deltaFreq) < portamento) {
       currentFrequencies[i] = targetFrequencies[i];
@@ -420,6 +436,7 @@ void loop() {
       currentFrequencies[i] -= portamento;
     }
     oscillators[i]->frequency(currentFrequencies[i]);
+    oscillators[i+6]->frequency(2*currentFrequencies[i]);
 
     // fade LEDs
     if(stringLights[i]>0) {
@@ -460,9 +477,11 @@ int fakeTouchRead(int pin) {
 
 void pluckString(int string) {
   envelopes[string]->noteOn();
+  envelopes[string+6]->noteOn();
   filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
   envelopes[string]->release(ampReleaseLong);
+  envelopes[string+6]->release(ampReleaseLong);
   nextRelease[string] = millis() + 1000; // temp
 }
 
