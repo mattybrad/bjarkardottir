@@ -168,6 +168,7 @@ int ANALOG_SENSOR_PINS[4] = {34,33,31,32};
 int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
+int KILL_SWITCH_PIN = 24;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
@@ -220,7 +221,7 @@ float maxPeak = 0.0;
 float ampAttack = 0;
 float ampDecay = 50;
 float ampSustain = 0.3;
-float ampReleaseLong = 4000; // for when a string is plucked
+float ampReleaseLong = 15000; // for when a string is plucked
 float ampReleaseShort = 50; // for when a string is muted
 float filterAttack = 0;
 float filterDecay = 100;
@@ -231,8 +232,9 @@ float lfo2Amount = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
-float octaveDelay = 150;
+float octaveDelay = 40;
 float octaveFade = 0.6; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
+bool killSwitch = false;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -279,6 +281,7 @@ void setup() {
   pinMode(SELECT_PINS_J[0], OUTPUT);
   pinMode(SELECT_PINS_J[1], OUTPUT);
   pinMode(SELECT_PINS_J[2], OUTPUT);
+  pinMode(KILL_SWITCH_PIN, INPUT);
    
   oscillators[0] = &waveform1;
   oscillators[1] = &waveform4;
@@ -448,6 +451,9 @@ void loop() {
           envelopes[thisString+12]->noteOn();
           nextNote[thisString+12] = -1;
         }
+        killSwitch = digitalRead(KILL_SWITCH_PIN);
+        //mixer3.gain(0,killSwitch?0:1);
+        //mixer3.gain(1,killSwitch?0:1);
       }
 
       if(j<4) {
