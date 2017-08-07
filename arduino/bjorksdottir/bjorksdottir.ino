@@ -173,6 +173,30 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
+// define knobs
+int FILTER_FREQUENCY_KNOB = 24;
+int FILTER_RESONANCE_KNOB = 0;
+int AMP_ATTACK_KNOB = 0;
+int AMP_SUSTAIN_KNOB = 0;
+int AMP_DECAY_KNOB = 0;
+int AMP_RELEASE_KNOB = 0;
+int AMP_RELEASE2_KNOB = 0;
+int VOLUME_KNOB = 0;
+int DISTORTION_KNOB = 0;
+int BIT_CRUSH_KNOB = 0;
+int FINE_TUNING_KNOB = 0;
+int COARSE_TUNING_KNOB = 0;
+int LFO1_FREQUENCY_KNOB = 0;
+int LFO2_FREQUENCY_KNOB = 0;
+int WHAMMY_KNOB = 0;
+int OCTAVE_FADE_KNOB = 25;
+int OCTAVE_DELAY_KNOB = 26;
+int WAVEFORM_KNOB = 0;
+int FILTER_ATTACK_KNOB = 0;
+int FILTER_DECAY_KNOB = 0;
+int FILTER_SUSTAIN_KNOB = 0;
+int FILTER_RELEASE_KNOB = 0;
+
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
   {1,2,3,4,5,6,7,8},
@@ -196,6 +220,7 @@ int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
   {4,4,4,4,5,5,5,5},
   {5,5,5,5,5,5,5,5}
 };
+int guitarTuning[6] = {-2,5,10,14,17,22};
 
 // define knob/sensor numbers
 const int AMP_ENV_ATTACK = 0;
@@ -219,7 +244,7 @@ int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 float maxPeak = 0.0;
 
 // adjustable values
-float ampAttack = 0;
+float ampAttack = 600;
 float ampDecay = 50;
 float ampSustain = 0.3;
 float ampReleaseLong = 15000; // for when a string is plucked
@@ -341,7 +366,7 @@ void setup() {
   stringMixers[5] = &stringMixer6;
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
-    envelopes[i]->sustain(ampAttack);
+    envelopes[i]->attack(ampAttack);
     envelopes[i]->sustain(ampSustain);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->release(ampReleaseLong);
@@ -462,21 +487,21 @@ void loop() {
         knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
       }
     }
-
-    adjustOctaveVolumes();
   }
-  
-  Serial.println(knobValues[24]);
-  Serial.println(knobValues[25]);
-  Serial.println(knobValues[26]);
-  Serial.println(knobValues[27]);
-  Serial.println(" ");
 
+  // set parameter values
+  filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,1000);
+  octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
+  //octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
+
+  // do stuff with parameters
+  adjustOctaveVolumes();
+  
   // set frequency of oscillators
   float portamento = 0.3;
   float deltaFreq;
   for(int i=0; i<6; i++) {
-    targetFrequencies[i] = getFreq(20+stringPositions[i]+i*5+(i>3?-1:0));
+    targetFrequencies[i] = getFreq(20+stringPositions[i]+guitarTuning[i]);
     deltaFreq = targetFrequencies[i] - currentFrequencies[i];
     if(true || abs(deltaFreq) < portamento) {
       currentFrequencies[i] = targetFrequencies[i];
@@ -490,7 +515,7 @@ void loop() {
     oscillators[i+12]->frequency(4*currentFrequencies[i]);
 
     // filters
-    filters[i]->frequency(map(knobValues[24],0,1023,10,1000));
+    filters[i]->frequency(filterCutoff);
 
     // fade LEDs
     if(stringLights[i]>0) {
@@ -558,3 +583,8 @@ void adjustOctaveVolumes() {
   }
 }
 
+// stolen from a forum
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
