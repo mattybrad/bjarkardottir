@@ -9,24 +9,24 @@ AudioSynthWaveform       lfo2;           //xy=65.71429443359375,568.178596973419
 AudioSynthWaveformDc     dc2;            //xy=115.71428680419922,800.1786003112793
 AudioSynthWaveformSineModulated lfo1;           //xy=124.71428680419922,725.4286003112793
 AudioMixer4              mixer11;        //xy=186.71428680419922,324.4285717010498
-AudioSynthWaveform       waveform2;      //xy=422.7142868041992,79.4285717010498
-AudioSynthWaveform       waveform3;      //xy=422.7142868041992,116.4285717010498
-AudioSynthWaveform       waveform7;      //xy=422.7142868041992,286.4285717010498
-AudioSynthWaveform       waveform1;      //xy=423.7142868041992,41.428571701049805
-AudioSynthWaveform       waveform4;      //xy=423.7142868041992,167.4285717010498
-AudioSynthWaveform       waveform6;      //xy=423.7142868041992,236.4285717010498
-AudioSynthWaveform       waveform10;     //xy=423.7142868041992,399.4285717010498
-AudioSynthWaveform       waveform11;     //xy=423.7142868041992,435.4285717010498
-AudioSynthWaveform       waveform5;      //xy=425.7142868041992,202.4285717010498
-AudioSynthWaveform       waveform9;      //xy=425.7142868041992,352.4285717010498
-AudioSynthWaveform       waveform8;      //xy=426.7142868041992,317.4285717010498
-AudioSynthWaveform       waveform12;     //xy=426.7142868041992,469.4285717010498
-AudioSynthWaveform       waveform15;     //xy=426.7142868041992,590.4285717010498
-AudioSynthWaveform       waveform14;     //xy=427.7142868041992,555.4285717010498
-AudioSynthWaveform       waveform13;     //xy=428.7142868041992,520.4285717010498
-AudioSynthWaveform       waveform16;     //xy=430.7142868041992,645.4285717010498
-AudioSynthWaveform       waveform18;     //xy=430.7142868041992,711.4285717010498
-AudioSynthWaveform       waveform17;     //xy=431.7142868041992,677.4285717010498
+AudioSynthWaveform       waveform_1B;      //xy=422.7142868041992,79.4285717010498
+AudioSynthWaveform       waveform_1C;      //xy=422.7142868041992,116.4285717010498
+AudioSynthWaveform       waveform_3A;      //xy=422.7142868041992,286.4285717010498
+AudioSynthWaveform       waveform_1A;      //xy=423.7142868041992,41.428571701049805
+AudioSynthWaveform       waveform_2A;      //xy=423.7142868041992,167.4285717010498
+AudioSynthWaveform       waveform_2C;      //xy=423.7142868041992,236.4285717010498
+AudioSynthWaveform       waveform_4A;     //xy=423.7142868041992,399.4285717010498
+AudioSynthWaveform       waveform_4B;     //xy=423.7142868041992,435.4285717010498
+AudioSynthWaveform       waveform_2B;      //xy=425.7142868041992,202.4285717010498
+AudioSynthWaveform       waveform_3C;      //xy=425.7142868041992,352.4285717010498
+AudioSynthWaveform       waveform_3B;      //xy=426.7142868041992,317.4285717010498
+AudioSynthWaveform       waveform_4C;     //xy=426.7142868041992,469.4285717010498
+AudioSynthWaveform       waveform_5C;     //xy=426.7142868041992,590.4285717010498
+AudioSynthWaveform       waveform_5B;     //xy=427.7142868041992,555.4285717010498
+AudioSynthWaveform       waveform_5A;     //xy=428.7142868041992,520.4285717010498
+AudioSynthWaveform       waveform_6A;     //xy=430.7142868041992,645.4285717010498
+AudioSynthWaveform       waveform_6C;     //xy=430.7142868041992,711.4285717010498
+AudioSynthWaveform       waveform_6B;     //xy=431.7142868041992,677.4285717010498
 AudioEffectEnvelope      envelope2;      //xy=577.7142868041992,74.4285717010498
 AudioEffectEnvelope      envelope1;      //xy=578.7142868041992,41.428571701049805
 AudioEffectEnvelope      envelope3;      //xy=578.7142868041992,110.4285717010498
@@ -85,24 +85,24 @@ AudioConnection          patchCord9(mixer11, envelope21);
 AudioConnection          patchCord10(mixer11, envelope22);
 AudioConnection          patchCord11(mixer11, envelope23);
 AudioConnection          patchCord12(mixer11, envelope24);
-AudioConnection          patchCord13(waveform2, envelope2);
-AudioConnection          patchCord14(waveform3, envelope3);
-AudioConnection          patchCord15(waveform7, envelope7);
-AudioConnection          patchCord16(waveform1, envelope1);
-AudioConnection          patchCord17(waveform4, envelope4);
-AudioConnection          patchCord18(waveform6, envelope6);
-AudioConnection          patchCord19(waveform10, envelope10);
-AudioConnection          patchCord20(waveform11, envelope11);
-AudioConnection          patchCord21(waveform5, envelope5);
-AudioConnection          patchCord22(waveform9, envelope9);
-AudioConnection          patchCord23(waveform8, envelope8);
-AudioConnection          patchCord24(waveform12, envelope12);
-AudioConnection          patchCord25(waveform15, envelope15);
-AudioConnection          patchCord26(waveform14, envelope14);
-AudioConnection          patchCord27(waveform13, envelope13);
-AudioConnection          patchCord28(waveform16, envelope16);
-AudioConnection          patchCord29(waveform18, envelope18);
-AudioConnection          patchCord30(waveform17, envelope17);
+AudioConnection          patchCord13(waveform_1B, envelope2);
+AudioConnection          patchCord14(waveform_1C, envelope3);
+AudioConnection          patchCord15(waveform_3A, envelope7);
+AudioConnection          patchCord16(waveform_1A, envelope1);
+AudioConnection          patchCord17(waveform_2A, envelope4);
+AudioConnection          patchCord18(waveform_2C, envelope6);
+AudioConnection          patchCord19(waveform_4A, envelope10);
+AudioConnection          patchCord20(waveform_4B, envelope11);
+AudioConnection          patchCord21(waveform_2B, envelope5);
+AudioConnection          patchCord22(waveform_3C, envelope9);
+AudioConnection          patchCord23(waveform_3B, envelope8);
+AudioConnection          patchCord24(waveform_4C, envelope12);
+AudioConnection          patchCord25(waveform_5C, envelope15);
+AudioConnection          patchCord26(waveform_5B, envelope14);
+AudioConnection          patchCord27(waveform_5A, envelope13);
+AudioConnection          patchCord28(waveform_6A, envelope16);
+AudioConnection          patchCord29(waveform_6C, envelope18);
+AudioConnection          patchCord30(waveform_6B, envelope17);
 AudioConnection          patchCord31(envelope2, 0, mixer4, 1);
 AudioConnection          patchCord32(envelope1, 0, mixer4, 0);
 AudioConnection          patchCord33(envelope3, 0, mixer4, 2);
@@ -285,24 +285,24 @@ void setup() {
   pinMode(KILL_SWITCH_PIN, INPUT);
   pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
    
-  oscillators[0] = &waveform1;
-  oscillators[1] = &waveform4;
-  oscillators[2] = &waveform7;
-  oscillators[3] = &waveform10;
-  oscillators[4] = &waveform13;
-  oscillators[5] = &waveform16;
-  oscillators[6] = &waveform2;
-  oscillators[7] = &waveform5;
-  oscillators[8] = &waveform8;
-  oscillators[9] = &waveform11;
-  oscillators[10] = &waveform14;
-  oscillators[11] = &waveform17;
-  oscillators[12] = &waveform3;
-  oscillators[13] = &waveform6;
-  oscillators[14] = &waveform9;
-  oscillators[15] = &waveform12;
-  oscillators[16] = &waveform15;
-  oscillators[17] = &waveform18;
+  oscillators[0] = &waveform_1A;
+  oscillators[1] = &waveform_2A;
+  oscillators[2] = &waveform_3A;
+  oscillators[3] = &waveform_4A;
+  oscillators[4] = &waveform_5A;
+  oscillators[5] = &waveform_6A;
+  oscillators[6] = &waveform_1B;
+  oscillators[7] = &waveform_2B;
+  oscillators[8] = &waveform_3B;
+  oscillators[9] = &waveform_4B;
+  oscillators[10] = &waveform_5B;
+  oscillators[11] = &waveform_6B;
+  oscillators[12] = &waveform_1C;
+  oscillators[13] = &waveform_2C;
+  oscillators[14] = &waveform_3C;
+  oscillators[15] = &waveform_4C;
+  oscillators[16] = &waveform_5C;
+  oscillators[17] = &waveform_6C;
   envelopes[0] = &envelope1;
   envelopes[1] = &envelope4;
   envelopes[2] = &envelope7;
