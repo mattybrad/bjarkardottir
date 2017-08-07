@@ -377,7 +377,7 @@ void setup() {
   digitalWrite(SELECT_PINS_J[0], bitRead(testChannel, 0));
   digitalWrite(SELECT_PINS_J[1], bitRead(testChannel, 1));
   digitalWrite(SELECT_PINS_J[2], bitRead(testChannel, 2));
-  Serial.println(touchRead(STRING_PIN));
+  //Serial.println(touchRead(STRING_PIN));
   //Serial.println(touchRead(FRET_PIN));
   
 }
@@ -465,6 +465,12 @@ void loop() {
 
     adjustOctaveVolumes();
   }
+  
+  Serial.println(knobValues[24]);
+  Serial.println(knobValues[25]);
+  Serial.println(knobValues[26]);
+  Serial.println(knobValues[27]);
+  Serial.println(" ");
 
   // set frequency of oscillators
   float portamento = 0.3;
@@ -482,6 +488,9 @@ void loop() {
     oscillators[i]->frequency(currentFrequencies[i]);
     oscillators[i+6]->frequency(2*currentFrequencies[i]);
     oscillators[i+12]->frequency(4*currentFrequencies[i]);
+
+    // filters
+    filters[i]->frequency(map(knobValues[24],0,1023,10,1000));
 
     // fade LEDs
     if(stringLights[i]>0) {
@@ -503,8 +512,8 @@ void loop() {
     analogWrite(KILL_SWITCH_LIGHT_PIN, 128 * thisPeak);
     if(thisPeak > maxPeak) maxPeak = thisPeak;
   }
-  Serial.println(maxPeak);
-  Serial.println(thisPeak);
+  //Serial.println(maxPeak);
+  //Serial.println(thisPeak);
 }
 
 float getFreq(float noteNum) {
