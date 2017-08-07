@@ -169,6 +169,7 @@ int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
 int KILL_SWITCH_PIN = 24;
+int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
@@ -282,6 +283,7 @@ void setup() {
   pinMode(SELECT_PINS_J[1], OUTPUT);
   pinMode(SELECT_PINS_J[2], OUTPUT);
   pinMode(KILL_SWITCH_PIN, INPUT);
+  pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
    
   oscillators[0] = &waveform1;
   oscillators[1] = &waveform4;
@@ -498,6 +500,7 @@ void loop() {
   float thisPeak;
   if(peak1.available()) {
     thisPeak = peak1.read();
+    analogWrite(KILL_SWITCH_LIGHT_PIN, 128 * thisPeak);
     if(thisPeak > maxPeak) maxPeak = thisPeak;
   }
   Serial.println(maxPeak);
