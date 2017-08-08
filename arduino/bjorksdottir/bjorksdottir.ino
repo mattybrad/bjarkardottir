@@ -208,6 +208,7 @@ int FILTER_ATTACK_KNOB = 0;
 int FILTER_DECAY_KNOB = 0;
 int FILTER_SUSTAIN_KNOB = 0;
 int FILTER_RELEASE_KNOB = 0;
+int FILTER_ENVELOPE_KNOB = 25;
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -269,11 +270,12 @@ float filterAttack = 2000;
 float filterDecay = 2000;
 float filterSustain = 0.1;
 float filterRelease = 2000;
-float lfo1Amount = 1;
-float lfo2Amount = 1;
+float lfo1Level = 1;
+float lfo2Level = 1;
 float distortionLevel = 0;
 float filterCutoff = 200;
 float filterResonance = 1.5;
+float filterEnvelopeLevel = 1.0;
 float octaveDelay = 40;
 float octaveFade = 0.6; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
 bool killSwitch = false;
@@ -283,6 +285,7 @@ AudioEffectEnvelope* envelopes[18];
 AudioFilterStateVariable* filters[6];
 AudioEffectEnvelope* filterEnvelopes[6];
 AudioMixer4* stringMixers[6];
+AudioMixer4* filterModMixers[6];
 
 float WAVESHAPE_EXAMPLE[17] = {
   -0.3,
@@ -379,6 +382,12 @@ void setup() {
   stringMixers[3] = &stringMixer4;
   stringMixers[4] = &stringMixer5;
   stringMixers[5] = &stringMixer6;
+  filterModMixers[0] = &filterModMixer1;
+  filterModMixers[1] = &filterModMixer2;
+  filterModMixers[2] = &filterModMixer3;
+  filterModMixers[3] = &filterModMixer4;
+  filterModMixers[4] = &filterModMixer5;
+  filterModMixers[5] = &filterModMixer6;
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->attack(ampAttack);
@@ -507,13 +516,16 @@ void loop() {
   }
 
   // set parameter values
-  filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,1000);
-  octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
+  filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
+  //octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
   octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
-  ampAttack = map(knobValues[AMP_ATTACK_KNOB],0,1023,0,1000);
+  //ampAttack = map(knobValues[AMP_ATTACK_KNOB],0,1023,0,1000);
+  filterEnvelopeLevel = mapFloat(knobValues[FILTER_ENVELOPE_KNOB],0,1023,0,1);
+  lfo1Level = mapFloat(knobValues[AMP_ATTACK_KNOB],0,1023,0,1);
 
   // do stuff with parameters
   adjustOctaveVolumes();
+  lfo1.amplitude(lfo1Level);
   
   // set frequency of oscillators
   float portamento = 0.3;
@@ -540,6 +552,8 @@ void loop() {
 
     // filters
     filters[i]->frequency(filterCutoff);
+    filterModMixers[i]->gain(0, filterEnvelopeLevel);
+    filterModMixers[i]->gain(1, 1);
 
     // fade LEDs
     if(stringLights[i]>0) {
