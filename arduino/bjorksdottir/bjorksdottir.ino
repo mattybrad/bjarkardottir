@@ -154,8 +154,6 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=952.7142868041992,56.4285717010498
 // GUItool: end automatically generated code
 
 
-
-
 // define how many things there are
 const int NUM_FRET_GROUPS = 9;
 const int NUM_FRETS = 12;
@@ -176,7 +174,7 @@ int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 // define knobs
 int FILTER_FREQUENCY_KNOB = 24;
 int FILTER_RESONANCE_KNOB = 0;
-int AMP_ATTACK_KNOB = 0;
+int AMP_ATTACK_KNOB = 27;
 int AMP_SUSTAIN_KNOB = 0;
 int AMP_DECAY_KNOB = 0;
 int AMP_RELEASE_KNOB = 0;
@@ -221,6 +219,10 @@ int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
   {5,5,5,5,5,5,5,5}
 };
 int guitarTuning[6] = {-2,5,10,14,17,22};
+
+// knob response curves
+int INT_SQUARE_RESPONSE_CURVE[1023];
+float FLOAT_RESPONSE_CURVE[1023];
 
 // define knob/sensor numbers
 const int AMP_ENV_ATTACK = 0;
@@ -367,8 +369,8 @@ void setup() {
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
     envelopes[i]->attack(ampAttack);
-    envelopes[i]->sustain(ampSustain);
     envelopes[i]->decay(ampDecay);
+    envelopes[i]->sustain(ampSustain);
     envelopes[i]->release(ampReleaseLong);
     if(i<6) {
       filters[i]->frequency(filterCutoff);
@@ -492,7 +494,8 @@ void loop() {
   // set parameter values
   filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,1000);
   octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
-  //octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
+  octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
+  ampAttack = map(knobValues[AMP_ATTACK_KNOB],0,1023,0,1000);
 
   // do stuff with parameters
   adjustOctaveVolumes();
@@ -513,6 +516,12 @@ void loop() {
     oscillators[i]->frequency(currentFrequencies[i]);
     oscillators[i+6]->frequency(2*currentFrequencies[i]);
     oscillators[i+12]->frequency(4*currentFrequencies[i]);
+    for(int j=0;j<3;j++) {
+      envelopes[i+6*j]->attack(ampAttack);
+      envelopes[i+6*j]->decay(ampDecay);
+      envelopes[i+6*j]->sustain(ampSustain);
+      envelopes[i+6*j]->release(ampReleaseLong);
+    }
 
     // filters
     filters[i]->frequency(filterCutoff);
