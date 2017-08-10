@@ -281,13 +281,16 @@ float lfo2Level = 0;
 float lfo1Frequency = 10;
 float lfo2Frequency = 10;
 float distortionLevel = 0;
-float filterCutoff = 1000;
-float filterResonance = 4;
-float filterEnvelopeLevel = 1.0;
+float filterCutoff = 2000;
+float filterResonance = 2;
+float filterEnvelopeLevel = 0.3;
 float octaveDelay = 40;
 float octaveFade = 0; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
 bool killSwitch = false;
 float portamento = 1000;
+float mainVolume = 0.5;
+float bitCrushRate = 44100;
+float bitCrushResolution = 16;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -297,23 +300,23 @@ AudioMixer4* stringMixers[6];
 AudioMixer4* filterModMixers[6];
 
 float WAVESHAPE_EXAMPLE[17] = {
-  -0.3,
+  -0.25,
+  -0.25,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.15,
   -0.1,
-  -0.4,
-  -0.1,
-  -0.5,
-  -0.9,
-  -0.6,
-  -0.1,
-  0.3,
-  0.9,
-  0.0,
-  0.5,
-  0.6,
+  0,
   0.1,
+  0.15,
   0.2,
-  0.5,
-  0.2
+  0.2,
+  0.2,
+  0.2,
+  0.25,
+  0.25
 };
 
 void setup() {
@@ -398,7 +401,7 @@ void setup() {
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
   for(int i=0;i<18;i++) {
-    oscillators[i]->begin(0.1,getFreq(44+5*i),WAVEFORM_SQUARE);
+    oscillators[i]->begin(0.2,getFreq(44+5*i),WAVEFORM_SINE);
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
@@ -529,7 +532,7 @@ void loop() {
   }
 
   // set parameter values
-  switch(3) {
+  switch(0) {
     case 0:
     lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
     lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
@@ -555,7 +558,14 @@ void loop() {
     filterAttack = mapFloat(knobValues[24],0,1023,0,1000);
     filterDecay = mapFloat(knobValues[25],0,1023,0,1000);
     filterSustain = mapFloat(knobValues[26],0,1023,0,1);
-    filterRelease = mapFloat(knobValues[27],0,1023,0,1000);
+    filterEnvelopeLevel = mapFloat(knobValues[27],0,1023,0,1);
+    break;
+
+    case 4:
+    mainVolume = mapFloat(knobValues[24],0,1023,0,1);
+    distortionLevel = mapFloat(knobValues[25],0,1023,0,1);
+    bitCrushRate = mapFloat(knobValues[26],0,1023,1,44100);
+    bitCrushResolution = mapFloat(knobValues[27],0,1023,1,16);
     break;
   }
   //filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
@@ -567,6 +577,10 @@ void loop() {
   // do stuff with parameters
   ampRelease = useAmpReleaseLong?ampReleaseLong:ampReleaseShort;
   adjustOctaveVolumes();
+  bitcrusher1.bits(bitCrushResolution);
+  bitcrusher1.sampleRate(bitCrushRate);
+  distortionMixer.gain(0,distortionLevel * mainVolume);
+  distortionMixer.gain(1,(1-distortionLevel) * mainVolume);
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
   float multiplier = 0.5;
