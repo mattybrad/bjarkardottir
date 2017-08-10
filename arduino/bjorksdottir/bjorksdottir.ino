@@ -265,11 +265,13 @@ int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 float maxPeak = 0.0;
 
 // adjustable values
-float ampAttack = 600;
+float ampAttack = 0;
 float ampDecay = 50;
 float ampSustain = 0.3;
+bool useAmpReleaseLong = true;
 float ampReleaseLong = 15000; // for when a string is plucked
 float ampReleaseShort = 50; // for when a string is muted
+float ampRelease = ampReleaseLong;
 float filterAttack = 2000;
 float filterDecay = 2000;
 float filterSustain = 0.1;
@@ -279,12 +281,13 @@ float lfo2Level = 0;
 float lfo1Frequency = 10;
 float lfo2Frequency = 10;
 float distortionLevel = 0;
-float filterCutoff = 200;
-float filterResonance = 1.5;
+float filterCutoff = 1000;
+float filterResonance = 4;
 float filterEnvelopeLevel = 1.0;
 float octaveDelay = 40;
-float octaveFade = 0.6; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
+float octaveFade = 0; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
 bool killSwitch = false;
+float portamento = 1000;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -399,7 +402,7 @@ void setup() {
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
-    envelopes[i]->release(ampReleaseLong);
+    envelopes[i]->release(ampRelease);
     if(i<6) {
       filters[i]->frequency(filterCutoff);
       filters[i]->resonance(filterResonance);
@@ -474,9 +477,10 @@ void loop() {
 
       // only 3 groups hooked up for now
       if(i<3) {
+        capacitance = 0;
         capacitance = fakeTouchRead(i*8+j);
         //capacitance = touchRead(FRET_PIN);
-        //capacitance = 0;
+        
         fretTouched = capacitance > fretTouchThreshold;
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
@@ -497,6 +501,7 @@ void loop() {
           pluckString(thisString);
         } else if(nextRelease[thisString] != -1 && millis() >= nextRelease[thisString]) {
           envelopes[thisString]->noteOff();
+          filterEnvelopes[thisString]->noteOff();
           envelopes[thisString+6]->noteOff();
           envelopes[thisString+12]->noteOff();
           nextRelease[thisString] = - 1;
@@ -524,17 +529,43 @@ void loop() {
   }
 
   // set parameter values
+  switch(3) {
+    case 0:
+    lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
+    lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
+    lfo1Frequency = mapFloat(knobValues[26],0,1023,1,200);
+    lfo2Frequency = mapFloat(knobValues[27],0,1023,1,200);
+    break;
+
+    case 1:
+    ampAttack = mapFloat(knobValues[24],0,1023,0,1000);
+    ampDecay = mapFloat(knobValues[25],0,1023,0,1000);
+    ampSustain = mapFloat(knobValues[26],0,1023,0,1);
+    ampReleaseShort = mapFloat(knobValues[27],0,1023,0,20000);
+    break;
+
+    case 2:
+    filterCutoff = mapFloat(knobValues[24],0,1023,1,1000);
+    filterResonance = mapFloat(knobValues[25],0,1023,0.7,5);
+    portamento = mapFloat(knobValues[26],0,1023,0,50);
+    lfo1Level = mapFloat(knobValues[27],0,1023,0,1);
+    break;
+
+    case 3:
+    filterAttack = mapFloat(knobValues[24],0,1023,0,1000);
+    filterDecay = mapFloat(knobValues[25],0,1023,0,1000);
+    filterSustain = mapFloat(knobValues[26],0,1023,0,1);
+    filterRelease = mapFloat(knobValues[27],0,1023,0,1000);
+    break;
+  }
   //filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
   //octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
   //octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
   //ampAttack = map(knobValues[AMP_ATTACK_KNOB],0,1023,0,1000);
   //filterEnvelopeLevel = mapFloat(knobValues[FILTER_ENVELOPE_KNOB],0,1023,0,1);
-  lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
-  lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
-  lfo1Frequency = mapFloat(knobValues[26],0,1023,1,200);
-  lfo2Frequency = mapFloat(knobValues[27],0,1023,1,200);
 
   // do stuff with parameters
+  ampRelease = useAmpReleaseLong?ampReleaseLong:ampReleaseShort;
   adjustOctaveVolumes();
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
@@ -547,16 +578,17 @@ void loop() {
   vcaSignalMixer.gain(2,multiplier*lfo2Level);
   
   // set frequency of oscillators
-  float portamento = 5; // semitones per second
+  bool portamentoActive = portamento < 50;
   float amountToChange;
   float noteInterval;
   float deltaFreq;
   for(int i=0; i<6; i++) {
+    // the 0.0594631 * frequency term is to get the interval between two semitones in Hz
     amountToChange = 0.0594631 * currentFrequencies[i] * portamento * loopTime * 0.001;
     targetFrequencies[i] = getFreq(20+stringPositions[i]+guitarTuning[i]);
     
     deltaFreq = targetFrequencies[i] - currentFrequencies[i];
-    if(abs(deltaFreq) < amountToChange || isFirstNote) {
+    if(!portamentoActive || abs(deltaFreq) < amountToChange || isFirstNote) {
       currentFrequencies[i] = targetFrequencies[i];
     } else if(deltaFreq > 0) {
       currentFrequencies[i] += amountToChange;
@@ -570,11 +602,16 @@ void loop() {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
       envelopes[i+6*j]->sustain(ampSustain);
-      envelopes[i+6*j]->release(ampReleaseLong);
+      envelopes[i+6*j]->release(ampRelease);
     }
 
     // filters
     filters[i]->frequency(filterCutoff);
+    filters[i]->resonance(filterResonance);
+    filterEnvelopes[i]->attack(filterAttack);
+    filterEnvelopes[i]->decay(filterDecay);
+    filterEnvelopes[i]->sustain(filterSustain);
+    filterEnvelopes[i]->release(filterRelease);
     filterModMixers[i]->gain(0, filterEnvelopeLevel);
     filterModMixers[i]->gain(1, 0);
 
@@ -623,6 +660,7 @@ void pluckString(int string) {
   envelopes[string]->noteOn();
   filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
+  useAmpReleaseLong = true;
   envelopes[string]->release(ampReleaseLong);
   envelopes[string+6]->release(ampReleaseLong);
   envelopes[string+12]->release(ampReleaseLong);
@@ -632,12 +670,14 @@ void pluckString(int string) {
 }
 
 void muteString(int string) {
+  useAmpReleaseLong = false;
   envelopes[string]->release(ampReleaseShort);
   envelopes[string]->noteOff();
   envelopes[string+6]->release(ampReleaseShort);
   envelopes[string+6]->noteOff();
   envelopes[string+12]->release(ampReleaseShort);
   envelopes[string+12]->noteOff();
+  filterEnvelopes[string]->noteOff();
 }
 
 void adjustOctaveVolumes() {
