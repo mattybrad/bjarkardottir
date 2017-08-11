@@ -297,6 +297,8 @@ float portamento = 1000;
 float mainVolume = 0.5;
 float bitCrushRate = 44100;
 float bitCrushResolution = 16;
+float waveSelectRaw = 0;
+float oscPulseWidth = 0.5;
 int waveSelect = 0;
 int waveSelectPrevious = waveSelect;
 float whammy = 0;
@@ -586,7 +588,9 @@ void loop() {
 
     case 5:
     waveSelectPrevious = waveSelect;
-    waveSelect = map(knobValues[24],0,1023,0,3);
+    waveSelectRaw = mapFloat(knobValues[24],0,1023,0,4.99);
+    waveSelect = floor(waveSelectRaw);
+    oscPulseWidth = max(0,min(1,waveSelectRaw-4));
     whammy = mapFloat(knobValues[25],0,1023,0.25,4);
     octaveFade = mapFloat(knobValues[26],0,1023,0,1);
     octaveDelay = mapFloat(knobValues[27],0,1023,0,1000);
@@ -642,6 +646,11 @@ void loop() {
     oscillators[i]->frequency(whammy*currentFrequencies[i]);
     oscillators[i+6]->frequency(2*whammy*currentFrequencies[i]);
     oscillators[i+12]->frequency(4*whammy*currentFrequencies[i]);
+    if(waveSelect==4) {
+      oscillators[i]->pulseWidth(oscPulseWidth);
+      oscillators[i+6]->pulseWidth(oscPulseWidth);
+      oscillators[i+12]->pulseWidth(oscPulseWidth);
+    }
     for(int j=0;j<3;j++) {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
@@ -745,6 +754,9 @@ int getWaveform(int waveformNumber) {
     break;
     case 3:
     returnWaveform = WAVEFORM_SAWTOOTH;
+    break;
+    case 4:
+    returnWaveform = WAVEFORM_PULSE;
     break;
   }
   return returnWaveform;
