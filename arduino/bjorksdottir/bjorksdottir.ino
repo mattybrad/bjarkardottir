@@ -8,7 +8,7 @@
 AudioSynthWaveform       lfo2;      //xy=75.00001525878906,586.6666297912598
 AudioSynthWaveformDc     filterEnvelopeDC; //xy=251.66666412353516,420.6666660308838
 AudioSynthWaveformSineModulated lfo1;           //xy=259.99998474121094,538.66672706604
-AudioFilterStateVariable filter7;        //xy=305,677.5
+AudioFilterStateVariable squareWaveSmoothingFilter;        //xy=305,677.5
 AudioSynthWaveform       waveform1B;     //xy=485.66666412353516,94.66666603088379
 AudioSynthWaveform       waveform1C;     //xy=485.66666412353516,131.6666660308838
 AudioSynthWaveform       waveform3A;     //xy=485.66666412353516,301.6666660308838
@@ -83,7 +83,7 @@ AudioMixer4              finalMixer;         //xy=2089.4642333984375,407.6785984
 AudioOutputI2S           i2s1;           //xy=2261.238140106201,294.38093662261963
 AudioAnalyzePeak         peak1;          //xy=2266.8093938827515,506.23808574676514
 AudioRecordQueue         glitchRecord;         //xy=2299.999855041504,405.7142925262451
-AudioConnection          patchCord1(lfo2, 0, filter7, 0);
+AudioConnection          patchCord1(lfo2, 0, squareWaveSmoothingFilter, 0);
 AudioConnection          patchCord2(filterEnvelopeDC, filterEnvelope1);
 AudioConnection          patchCord3(filterEnvelopeDC, filterEnvelope2);
 AudioConnection          patchCord4(filterEnvelopeDC, filterEnvelope3);
@@ -97,7 +97,7 @@ AudioConnection          patchCord11(lfo1, 0, filterModMixer4, 1);
 AudioConnection          patchCord12(lfo1, 0, filterModMixer5, 1);
 AudioConnection          patchCord13(lfo1, 0, filterModMixer6, 1);
 AudioConnection          patchCord14(lfo1, 0, vcaSignalMixer, 1);
-AudioConnection          patchCord15(filter7, 0, vcaSignalMixer, 2);
+AudioConnection          patchCord15(squareWaveSmoothingFilter, 0, vcaSignalMixer, 2);
 AudioConnection          patchCord16(waveform1B, envelope2);
 AudioConnection          patchCord17(waveform1C, envelope3);
 AudioConnection          patchCord18(waveform3A, envelope7);
@@ -297,6 +297,9 @@ float portamento = 1000;
 float mainVolume = 0.5;
 float bitCrushRate = 44100;
 float bitCrushResolution = 16;
+int waveSelect = 0;
+int waveSelectPrevious = waveSelect;
+float whammy = 0;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -407,7 +410,7 @@ void setup() {
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
   for(int i=0;i<18;i++) {
-    oscillators[i]->begin(0.2,getFreq(44+5*i),WAVEFORM_SAWTOOTH);
+    oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
@@ -426,7 +429,7 @@ void setup() {
   filterEnvelopeDC.amplitude(1);
   vcaDC.amplitude(1);
 
-  filter7.frequency(1000); // smooths square wave
+  squareWaveSmoothingFilter.frequency(1000);
   lfo2.begin(1,5,WAVEFORM_SQUARE);
   lfo1.amplitude(1);
   lfo1.frequency(3);
@@ -545,7 +548,7 @@ void loop() {
   }
 
   // set parameter values
-  switch(4) {
+  switch(5) {
     case 0:
     lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
     lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
@@ -578,8 +581,15 @@ void loop() {
     mainVolume = mapFloat(knobValues[24],0,1023,0,1);
     distortionLevel = mapFloat(knobValues[25],0,1023,0,1);
     bitCrushRate = mapFloat(knobValues[26],0,1023,1,44100);
-    bitCrushResolution = mapFloat(knobValues[27],0,1023,1,16);
+    bitCrushResolution = mapFloat(knobValues[27],0,1023,2,16);
     break;
+
+    case 5:
+    waveSelectPrevious = waveSelect;
+    waveSelect = map(knobValues[24],0,1023,0,3);
+    whammy = mapFloat(knobValues[25],0,1023,0.25,4);
+    octaveFade = mapFloat(knobValues[26],0,1023,0,1);
+    octaveDelay = mapFloat(knobValues[27],0,1023,0,1000);
   }
   //filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
   //octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
@@ -611,6 +621,12 @@ void loop() {
   float noteInterval;
   float deltaFreq;
   for(int i=0; i<6; i++) {
+    if(waveSelect!=waveSelectPrevious) {
+      oscillators[i]->begin(getWaveform(waveSelect));
+      oscillators[i+6]->begin(getWaveform(waveSelect));
+      oscillators[i+12]->begin(getWaveform(waveSelect));
+    }
+    
     // the 0.0594631 * frequency term is to get the interval between two semitones in Hz
     amountToChange = 0.0594631 * currentFrequencies[i] * portamento * loopTime * 0.001;
     targetFrequencies[i] = getFreq(20+stringPositions[i]+guitarTuning[i]);
@@ -623,9 +639,9 @@ void loop() {
     } else {
       currentFrequencies[i] -= amountToChange;
     }
-    oscillators[i]->frequency(currentFrequencies[i]);
-    oscillators[i+6]->frequency(2*currentFrequencies[i]);
-    oscillators[i+12]->frequency(4*currentFrequencies[i]);
+    oscillators[i]->frequency(whammy*currentFrequencies[i]);
+    oscillators[i+6]->frequency(2*whammy*currentFrequencies[i]);
+    oscillators[i+12]->frequency(4*whammy*currentFrequencies[i]);
     for(int j=0;j<3;j++) {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
@@ -713,6 +729,25 @@ void adjustOctaveVolumes() {
     stringMixers[i]->gain(1,min(1,octaveFade*2));
     stringMixers[i]->gain(2,max(0,octaveFade*2-1));
   }
+}
+
+int getWaveform(int waveformNumber) {
+  int returnWaveform;
+  switch(waveformNumber) {
+    case 0:
+    returnWaveform = WAVEFORM_SQUARE;
+    break;
+    case 1:
+    returnWaveform = WAVEFORM_SINE;
+    break;
+    case 2:
+    returnWaveform = WAVEFORM_TRIANGLE;
+    break;
+    case 3:
+    returnWaveform = WAVEFORM_SAWTOOTH;
+    break;
+  }
+  return returnWaveform;
 }
 
 // stolen from a forum
