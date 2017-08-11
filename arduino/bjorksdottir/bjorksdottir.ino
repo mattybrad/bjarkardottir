@@ -78,8 +78,11 @@ AudioEffectMultiply      vca1;           //xy=1534.6666641235352,482.66666603088
 AudioEffectWaveshaper    waveshape1;     //xy=1635.6666641235352,416.6666660308838
 AudioMixer4              distortionMixer; //xy=1767.6666641235352,473.6666660308838
 AudioEffectBitcrusher    bitcrusher1;    //xy=1902.6666641235352,403.6666660308838
-AudioAnalyzePeak         peak1;          //xy=2069.666664123535,497.6666660308838
-AudioOutputI2S           i2s1;           //xy=2082.666664123535,318.6666660308838
+AudioPlayQueue           glitch;         //xy=1971.4285714285713,482.85714285714283
+AudioMixer4              finalMixer;         //xy=2089.4642333984375,407.67859840393066
+AudioOutputI2S           i2s1;           //xy=2261.238140106201,294.38093662261963
+AudioAnalyzePeak         peak1;          //xy=2266.8093938827515,506.23808574676514
+AudioRecordQueue         glitchRecord;         //xy=2299.999855041504,405.7142925262451
 AudioConnection          patchCord1(lfo2, 0, filter7, 0);
 AudioConnection          patchCord2(filterEnvelopeDC, filterEnvelope1);
 AudioConnection          patchCord3(filterEnvelopeDC, filterEnvelope2);
@@ -164,9 +167,12 @@ AudioConnection          patchCord81(vca1, waveshape1);
 AudioConnection          patchCord82(vca1, 0, distortionMixer, 1);
 AudioConnection          patchCord83(waveshape1, 0, distortionMixer, 0);
 AudioConnection          patchCord84(distortionMixer, bitcrusher1);
-AudioConnection          patchCord85(bitcrusher1, 0, i2s1, 1);
-AudioConnection          patchCord86(bitcrusher1, 0, i2s1, 0);
-AudioConnection          patchCord87(bitcrusher1, peak1);
+AudioConnection          patchCord85(bitcrusher1, 0, finalMixer, 0);
+AudioConnection          patchCord86(glitch, 0, finalMixer, 1);
+AudioConnection          patchCord87(finalMixer, peak1);
+AudioConnection          patchCord88(finalMixer, 0, i2s1, 0);
+AudioConnection          patchCord89(finalMixer, 0, i2s1, 1);
+AudioConnection          patchCord90(distortionMixer, glitchRecord);
 AudioControlSGTL5000     sgtl5000_1;     //xy=1157.6666641235352,66.66666603088379
 // GUItool: end automatically generated code
 
@@ -401,7 +407,7 @@ void setup() {
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
   for(int i=0;i<18;i++) {
-    oscillators[i]->begin(0.2,getFreq(44+5*i),WAVEFORM_SINE);
+    oscillators[i]->begin(0.2,getFreq(44+5*i),WAVEFORM_SAWTOOTH);
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
@@ -443,6 +449,7 @@ void setup() {
   //Serial.println(touchRead(STRING_PIN));
   //Serial.println(touchRead(FRET_PIN));
   
+  glitchRecord.begin();
 }
 
 bool isTouched;
@@ -531,8 +538,14 @@ void loop() {
     }
   }
 
+  // record glitch data
+  while(glitchRecord.available()) {
+    glitchRecord.readBuffer();
+    glitchRecord.freeBuffer();
+  }
+
   // set parameter values
-  switch(0) {
+  switch(4) {
     case 0:
     lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
     lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
@@ -579,8 +592,9 @@ void loop() {
   adjustOctaveVolumes();
   bitcrusher1.bits(bitCrushResolution);
   bitcrusher1.sampleRate(bitCrushRate);
-  distortionMixer.gain(0,distortionLevel * mainVolume);
-  distortionMixer.gain(1,(1-distortionLevel) * mainVolume);
+  distortionMixer.gain(0,distortionLevel);
+  distortionMixer.gain(1,1-distortionLevel);
+  finalMixer.gain(0,mainVolume);
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
   float multiplier = 0.5;
