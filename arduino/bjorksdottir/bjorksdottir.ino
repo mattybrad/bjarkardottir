@@ -261,8 +261,8 @@ float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int stringLights[6] = {0,0,0,0,0,0};
 
-int touchThreshold = 1200;
-int fretTouchThreshold = 2000;
+int touchThreshold = 20000; // was 1200 with nscan=2, prescale=1
+int fretTouchThreshold = 20000;
 int touchTimeLimit = 100000;
 
 int nextRelease[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
@@ -301,7 +301,7 @@ float waveSelectRaw = 0;
 float oscPulseWidth = 0.5;
 int waveSelect = 0;
 int waveSelectPrevious = waveSelect;
-float whammy = 0;
+float whammy = 1;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -491,13 +491,15 @@ void loop() {
       thisFret = FRET_LOOKUP[i][j];
 
       // only 3 groups hooked up for now
-      if(i<3) {
+      if(i<1) {
         capacitance = 0;
-        capacitance = fakeTouchRead(i*8+j);
-        //capacitance = touchRead(FRET_PIN);
+        //capacitance = fakeTouchRead(i*8+j);
+        capacitance = touchRead(FRET_PIN);
+        //Serial.println(capacitance);
         
         fretTouched = capacitance > fretTouchThreshold;
         if(fretTouched) {
+          Serial.println("TOUCHED");
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
         }
       }
@@ -506,7 +508,11 @@ void loop() {
       if(thisString<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
+        //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
+        touchReading = touchRead(STRING_PIN);
+        //touchReading = random(1000) ? 0 : touchThreshold + 1;
+        //int test = touchRead(STRING_PIN);
+        //Serial.println(touchReading);
         isTouched = touchReading > touchThreshold || touchReading < 0;
         if(!strings[thisString] && isTouched) {
           // string has just been pressed
@@ -550,7 +556,7 @@ void loop() {
   }
 
   // set parameter values
-  switch(5) {
+  switch(999) {
     case 0:
     lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
     lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
@@ -594,6 +600,7 @@ void loop() {
     whammy = mapFloat(knobValues[25],0,1023,0.25,4);
     octaveFade = mapFloat(knobValues[26],0,1023,0,1);
     octaveDelay = mapFloat(knobValues[27],0,1023,0,1000);
+    break;
   }
   //filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
   //octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
@@ -682,7 +689,8 @@ void loop() {
 
   timeTotal = millis() - timeStart;
   loopTime = timeTotal;
-  //Serial.println(timeTotal);
+  Serial.print("TIME:");
+  Serial.println(timeTotal);
   float thisPeak;
   if(peak1.available()) {
     thisPeak = peak1.read();
