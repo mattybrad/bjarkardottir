@@ -262,8 +262,8 @@ int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 int stringLights[6] = {0,0,0,0,0,0};
 
 int touchThreshold = 20000; // was 1200 with nscan=2, prescale=1
-int fretTouchThreshold = 20000;
-int touchTimeLimit = 100000;
+int fretTouchThreshold = 15000;
+int touchTimeLimit = 5 * 1000; // in microseconds, apparently
 
 int nextRelease[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
@@ -491,10 +491,10 @@ void loop() {
       thisFret = FRET_LOOKUP[i][j];
 
       // only 3 groups hooked up for now
-      if(i<1) {
+      if(i<8) {
         capacitance = 0;
         //capacitance = fakeTouchRead(i*8+j);
-        capacitance = touchRead(FRET_PIN);
+        //capacitance = touchRead(FRET_PIN);
         //Serial.println(capacitance);
         
         fretTouched = capacitance > fretTouchThreshold;
@@ -508,8 +508,8 @@ void loop() {
       if(thisString<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
-        touchReading = touchRead(STRING_PIN);
+        touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
+        //touchReading = touchRead(STRING_PIN);
         //touchReading = random(1000) ? 0 : touchThreshold + 1;
         //int test = touchRead(STRING_PIN);
         //Serial.println(touchReading);
