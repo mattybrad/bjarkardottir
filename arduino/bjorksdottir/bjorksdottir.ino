@@ -261,9 +261,9 @@ float currentFrequencies[6] = {440,440,440,440,440,440};
 int knobValues[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int stringLights[6] = {0,0,0,0,0,0};
 
-int touchThreshold = 20000; // was 1200 with nscan=2, prescale=1
+int touchThreshold = 20000; // was 1200 with nscan=2, prescale=1, maybe 20000 or so at nscan=9, prescale=2
 int fretTouchThreshold = 15000;
-int touchTimeLimit = 5 * 1000; // in microseconds, apparently
+int touchTimeLimit = 50 * 1000; // in microseconds, apparently
 
 int nextRelease[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
@@ -335,7 +335,7 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
 
-  
+  Serial.begin(9600);
 
   // init LED pins
   for(int i=0;i<6;i++) {
@@ -454,7 +454,7 @@ void setup() {
   //Serial.println(touchRead(STRING_PIN));
   //Serial.println(touchRead(FRET_PIN));
   
-  glitchRecord.begin();
+  //glitchRecord.begin();
 }
 
 bool isTouched;
@@ -463,6 +463,7 @@ long timeTotal;
 int thisString;
 bool isFirstNote = true;
 int loopTime = 80; // rough guess for first loop for now
+int loopCount = 0;
 void loop() {
 
   int capacitance;
@@ -473,6 +474,8 @@ void loop() {
   long touchReading;
 
   timeStart = millis();
+
+  loopCount = (loopCount + 1) % 10;
 
   // 9 iterations, 1 for each multiplexer
   for(int i = 0; i < 8; i ++) {
@@ -499,7 +502,6 @@ void loop() {
         
         fretTouched = capacitance > fretTouchThreshold;
         if(fretTouched) {
-          Serial.println("TOUCHED");
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
         }
       }
@@ -508,10 +510,13 @@ void loop() {
       if(thisString<6) {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
-        //touchReading = touchRead(STRING_PIN);
+        //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
+        touchReading = touchRead(STRING_PIN);
         //touchReading = random(1000) ? 0 : touchThreshold + 1;
         //int test = touchRead(STRING_PIN);
+        //Serial.println(touchReading);
+        //Serial.print(thisString);
+        //Serial.print("\t");
         //Serial.println(touchReading);
         isTouched = touchReading > touchThreshold || touchReading < 0;
         if(!strings[thisString] && isTouched) {
@@ -550,10 +555,10 @@ void loop() {
   }
 
   // record glitch data
-  while(glitchRecord.available()) {
-    glitchRecord.readBuffer();
-    glitchRecord.freeBuffer();
-  }
+  //while(glitchRecord.available()) {
+    //glitchRecord.readBuffer();
+    //glitchRecord.freeBuffer();
+  //}
 
   // set parameter values
   switch(999) {
