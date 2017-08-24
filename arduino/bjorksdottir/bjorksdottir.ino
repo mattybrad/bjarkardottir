@@ -511,8 +511,8 @@ void loop() {
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
         //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
-        touchReading = touchRead(STRING_PIN);
-        //touchReading = random(1000) ? 0 : touchThreshold + 1;
+        //touchReading = touchRead(STRING_PIN);
+        touchReading = random(50000) ? 0 : touchThreshold + 1;
         //int test = touchRead(STRING_PIN);
         //Serial.println(touchReading);
         //Serial.print(thisString);
@@ -561,7 +561,13 @@ void loop() {
   //}
 
   // set parameter values
-  switch(999) {
+  switch(666) {
+    case 666:
+    ampAttack = mapFloat(knobValues[0],0,1023,0,1000);
+    ampDecay = mapFloat(knobValues[1],0,1023,0,1000);
+    ampSustain = mapFloat(knobValues[2],0,1023,0,1);
+    ampReleaseShort = mapFloat(knobValues[3],0,1023,0,20000);
+    
     case 0:
     lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
     lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
