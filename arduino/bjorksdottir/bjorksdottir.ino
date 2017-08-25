@@ -195,31 +195,39 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
+int activeKnobGroup = 1;
+int tempKnobPin = 8;
+int tempKnobFunction(int group, int pin) {
+  int returnPin = (group == activeKnobGroup) ? pin : tempKnobPin;
+  tempKnobPin ++;
+  return returnPin;
+}
+
 // define knobs
 ParamKnob paramKnobs[32];
-int FILTER_CUTOFF_KNOB = 0;
-int FILTER_RESONANCE_KNOB = 1;
-int FILTER_ATTACK_KNOB = 2;
-int FILTER_DECAY_KNOB = 3;
-int FILTER_SUSTAIN_KNOB = 4;
-int FILTER_RELEASE_KNOB = 32;
-int FILTER_ENVELOPE_KNOB = 5;
-int AMP_ATTACK_KNOB = 27;
-int AMP_SUSTAIN_KNOB = 0;
-int AMP_DECAY_KNOB = 0;
-int AMP_RELEASE_KNOB = 0;
-int AMP_RELEASE2_KNOB = 0;
-int VOLUME_KNOB = 0;
-int DISTORTION_KNOB = 0;
-int BIT_CRUSH_KNOB = 0;
-int FINE_TUNING_KNOB = 0;
-int COARSE_TUNING_KNOB = 0;
-int LFO1_FREQUENCY_KNOB = 0;
-int LFO2_FREQUENCY_KNOB = 0;
-int WHAMMY_KNOB = 0;
-int OCTAVE_FADE_KNOB = 25;
-int OCTAVE_DELAY_KNOB = 26;
-int WAVEFORM_KNOB = 0;
+int FILTER_CUTOFF_KNOB = tempKnobFunction(0,0);
+int FILTER_RESONANCE_KNOB = tempKnobFunction(0,1);
+int FILTER_ATTACK_KNOB = tempKnobFunction(0,2);
+int FILTER_DECAY_KNOB = tempKnobFunction(0,3);
+int FILTER_SUSTAIN_KNOB = tempKnobFunction(0,4);
+int FILTER_RELEASE_KNOB = tempKnobFunction(0,5);
+int FILTER_ENVELOPE_KNOB = tempKnobFunction(0,6);
+int AMP_ATTACK_KNOB = tempKnobFunction(1,0);
+int AMP_SUSTAIN_KNOB = tempKnobFunction(1,1);
+int AMP_DECAY_KNOB = tempKnobFunction(1,2);
+int AMP_RELEASE_KNOB = tempKnobFunction(1,3);
+int AMP_RELEASE2_KNOB = tempKnobFunction(1,4);
+int VOLUME_KNOB = tempKnobFunction(1,5);
+int DISTORTION_KNOB = tempKnobFunction(1,6);
+int BIT_CRUSH_KNOB = tempKnobFunction(1,7);
+int FINE_TUNING_KNOB = tempKnobFunction(0,0);
+int COARSE_TUNING_KNOB = tempKnobFunction(0,0);
+int LFO1_FREQUENCY_KNOB = tempKnobFunction(0,0);
+int LFO2_FREQUENCY_KNOB = tempKnobFunction(0,0);
+int WHAMMY_KNOB = tempKnobFunction(0,0);
+int OCTAVE_FADE_KNOB = tempKnobFunction(0,0);
+int OCTAVE_DELAY_KNOB = tempKnobFunction(0,0);
+int WAVEFORM_KNOB = tempKnobFunction(0,0);
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -414,6 +422,14 @@ void setup() {
   paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20);
   paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5);
   paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5);
+  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
+
+  for(int i=0;i<8;i++) {
+    paramKnobs[i].isActive = true;
+  }
   
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
@@ -573,6 +589,10 @@ void loop() {
   filterDecay = paramKnobs[FILTER_DECAY_KNOB].getCurrentValue();
   filterSustain = paramKnobs[FILTER_SUSTAIN_KNOB].getCurrentValue();
   filterEnvelopeLevel = paramKnobs[FILTER_ENVELOPE_KNOB].getCurrentValue();
+  ampAttack = paramKnobs[AMP_ATTACK_KNOB].getCurrentValue();
+  ampDecay = paramKnobs[AMP_DECAY_KNOB].getCurrentValue();
+  ampSustain = paramKnobs[AMP_SUSTAIN_KNOB].getCurrentValue();
+  ampReleaseLong = paramKnobs[AMP_RELEASE_KNOB].getCurrentValue();
 
   // set parameter values
   switch(999) {
@@ -627,11 +647,6 @@ void loop() {
     octaveDelay = mapFloat(knobValues[27],0,1023,0,1000);
     break;
   }
-  //filterCutoff = map(knobValues[FILTER_FREQUENCY_KNOB],0,1023,10,5000);
-  //octaveFade = mapFloat(knobValues[OCTAVE_FADE_KNOB],0,1023,0,1);
-  //octaveDelay = mapFloat(knobValues[OCTAVE_DELAY_KNOB],0,1023,0,1000);
-  //ampAttack = map(knobValues[AMP_ATTACK_KNOB],0,1023,0,1000);
-  //filterEnvelopeLevel = mapFloat(knobValues[FILTER_ENVELOPE_KNOB],0,1023,0,1);
 
   // do stuff with parameters
   ampRelease = useAmpReleaseLong?ampReleaseLong:ampReleaseShort;
@@ -750,7 +765,7 @@ void pluckString(int string) {
   envelopes[string]->release(ampReleaseLong);
   envelopes[string+6]->release(ampReleaseLong);
   envelopes[string+12]->release(ampReleaseLong);
-  nextRelease[string] = millis() + 1000; // temp
+  nextRelease[string] = millis() + ampAttack + ampDecay; // waiting for attack and decay phases before triggering note off
   nextNote[string+6] = millis() + octaveDelay;
   nextNote[string+12] = millis() + 2 * octaveDelay;
 }

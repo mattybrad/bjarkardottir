@@ -12,6 +12,7 @@ class ParamKnob
     void updateValue();
     float getCurrentValue();
     bool isChanged();
+    bool isActive;
   private:
     int _lastUpdateTime;
     bool _changed;

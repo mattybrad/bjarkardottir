@@ -3,6 +3,7 @@
 
 ParamKnob::ParamKnob()
 {
+  isActive = false;
   _currentValue = _startValue;
   _lastUpdateTime = millis();
 
@@ -44,7 +45,7 @@ void ParamKnob::updateValue()
 
 float ParamKnob::getCurrentValue()
 {
-  return _mapFloat(_currentValue,0,1023,_minValue,_maxValue);
+  return isActive ? _mapFloat(_currentValue,0,1023,_minValue,_maxValue) : _startValue;
 }
 
 bool ParamKnob::isChanged()
