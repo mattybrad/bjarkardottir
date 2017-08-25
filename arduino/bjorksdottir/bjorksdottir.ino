@@ -197,8 +197,13 @@ int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
 // define knobs
 ParamKnob paramKnobs[32];
-int FILTER_FREQUENCY_KNOB = 24;
-int FILTER_RESONANCE_KNOB = 0;
+int FILTER_CUTOFF_KNOB = 0;
+int FILTER_RESONANCE_KNOB = 1;
+int FILTER_ATTACK_KNOB = 2;
+int FILTER_DECAY_KNOB = 3;
+int FILTER_SUSTAIN_KNOB = 4;
+int FILTER_RELEASE_KNOB = 32;
+int FILTER_ENVELOPE_KNOB = 5;
 int AMP_ATTACK_KNOB = 27;
 int AMP_SUSTAIN_KNOB = 0;
 int AMP_DECAY_KNOB = 0;
@@ -215,11 +220,6 @@ int WHAMMY_KNOB = 0;
 int OCTAVE_FADE_KNOB = 25;
 int OCTAVE_DELAY_KNOB = 26;
 int WAVEFORM_KNOB = 0;
-int FILTER_ATTACK_KNOB = 0;
-int FILTER_DECAY_KNOB = 0;
-int FILTER_SUSTAIN_KNOB = 0;
-int FILTER_RELEASE_KNOB = 0;
-int FILTER_ENVELOPE_KNOB = 25;
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -250,12 +250,6 @@ int guitarTuning[6] = {0,5,10,15,19,24};
 // knob response curves
 int INT_SQUARE_RESPONSE_CURVE[1023];
 float FLOAT_RESPONSE_CURVE[1023];
-
-// define knob/sensor numbers
-const int AMP_ENV_ATTACK = 0;
-const int AMP_ENV_DECAY = 1;
-const int AMP_ENV_SUSTAIN = 2;
-const int AMP_ENV_RELEASE = 3;
 
 bool strings[6] = {false,false,false,false,false,false};
 float targetFrequencies[6] = {440,440,440,440,440,440};
@@ -413,6 +407,13 @@ void setup() {
   filterModMixers[3] = &filterModMixer4;
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
+
+  paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500);
+  paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 1);
+  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1);
+  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20);
+  paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5);
+  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5);
   
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
@@ -554,6 +555,7 @@ void loop() {
       if(j<4) {
         knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
         paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
+        //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
       }
     }
   }
@@ -564,7 +566,13 @@ void loop() {
     //glitchRecord.freeBuffer();
   //}
 
-  ampAttack = paramKnobs[0].getCurrentValue();
+  //ampAttack = paramKnobs[0].getCurrentValue();
+  filterCutoff = paramKnobs[FILTER_CUTOFF_KNOB].getCurrentValue();
+  filterResonance = paramKnobs[FILTER_RESONANCE_KNOB].getCurrentValue();
+  filterAttack = paramKnobs[FILTER_ATTACK_KNOB].getCurrentValue();
+  filterDecay = paramKnobs[FILTER_DECAY_KNOB].getCurrentValue();
+  filterSustain = paramKnobs[FILTER_SUSTAIN_KNOB].getCurrentValue();
+  filterEnvelopeLevel = paramKnobs[FILTER_ENVELOPE_KNOB].getCurrentValue();
 
   // set parameter values
   switch(999) {
@@ -706,8 +714,8 @@ void loop() {
 
   timeTotal = millis() - timeStart;
   loopTime = timeTotal;
-  Serial.print("TIME:");
-  Serial.println(timeTotal);
+  //Serial.print("TIME:");
+  //Serial.println(timeTotal);
   float thisPeak;
   if(peak1.available()) {
     thisPeak = peak1.read();
