@@ -176,6 +176,7 @@ AudioConnection          patchCord90(distortionMixer, glitchRecord);
 AudioControlSGTL5000     sgtl5000_1;     //xy=1157.6666641235352,66.66666603088379
 // GUItool: end automatically generated code
 
+#include "ParamKnob.h"
 
 // define how many things there are
 const int NUM_FRET_GROUPS = 9;
@@ -195,6 +196,7 @@ int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
 // define knobs
+ParamKnob paramKnobs[32];
 int FILTER_FREQUENCY_KNOB = 24;
 int FILTER_RESONANCE_KNOB = 0;
 int AMP_ATTACK_KNOB = 27;
@@ -411,6 +413,7 @@ void setup() {
   filterModMixers[3] = &filterModMixer4;
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
+  
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
     envelopes[i]->attack(ampAttack);
@@ -550,6 +553,7 @@ void loop() {
 
       if(j<4) {
         knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
+        paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
       }
     }
   }
@@ -560,8 +564,10 @@ void loop() {
     //glitchRecord.freeBuffer();
   //}
 
+  ampAttack = paramKnobs[0].getCurrentValue();
+
   // set parameter values
-  switch(666) {
+  switch(999) {
     case 666:
     ampAttack = mapFloat(knobValues[0],0,1023,0,1000);
     ampDecay = mapFloat(knobValues[1],0,1023,0,1000);
