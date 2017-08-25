@@ -195,7 +195,7 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
-int activeKnobGroup = 1;
+int activeKnobGroup = 2;
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
   if(group == activeKnobGroup) {
@@ -224,14 +224,17 @@ int DISTORTION_KNOB = tempKnobFunction(1,5);
 int BIT_CRUSH_RESOLUTION_KNOB = tempKnobFunction(1,6);
 int BIT_CRUSH_RATE_KNOB = tempKnobFunction(1,7);
 int VOLUME_KNOB = tempKnobFunction(2,0);
-int FINE_TUNING_KNOB = tempKnobFunction(2,0);
-int COARSE_TUNING_KNOB = tempKnobFunction(2,0);
-int LFO1_FREQUENCY_KNOB = tempKnobFunction(2,0);
-int LFO2_FREQUENCY_KNOB = tempKnobFunction(2,0);
-int WHAMMY_KNOB = tempKnobFunction(2,0);
-int OCTAVE_FADE_KNOB = tempKnobFunction(2,0);
-int OCTAVE_DELAY_KNOB = tempKnobFunction(2,0);
-int WAVEFORM_KNOB = tempKnobFunction(2,0);
+int FINE_TUNING_KNOB = tempKnobFunction(2,1);
+int COARSE_TUNING_KNOB = tempKnobFunction(2,2);
+int PORTAMENTO_KNOB = tempKnobFunction(2,3);
+int LFO1_FREQUENCY_KNOB = tempKnobFunction(3,0);
+int LFO2_FREQUENCY_KNOB = tempKnobFunction(3,1);
+int LFO1_LEVEL_KNOB = tempKnobFunction(3,2);
+int LFO2_LEVEL_KNOB = tempKnobFunction(3,3);
+int WHAMMY_KNOB = tempKnobFunction(3,4);
+int OCTAVE_FADE_KNOB = tempKnobFunction(3,5);
+int OCTAVE_DELAY_KNOB = tempKnobFunction(3,6);
+int WAVE_SELECT_KNOB = tempKnobFunction(3,7);
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -310,6 +313,8 @@ float oscPulseWidth = 0.5;
 int waveSelect = 0;
 int waveSelectPrevious = waveSelect;
 float whammy = 1;
+float coarseTuning = 1;
+float fineTuning = 1;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -436,16 +441,21 @@ void setup() {
   paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
   paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16);
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100);
-
-  Serial.println(AMP_ATTACK_KNOB);
-  Serial.println(AMP_DECAY_KNOB);
-  Serial.println(AMP_SUSTAIN_KNOB);
-  Serial.println(AMP_RELEASE_KNOB);
-  Serial.println(BIT_CRUSH_RESOLUTION_KNOB);
-  Serial.println(BIT_CRUSH_RATE_KNOB);
+  paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0);
+  paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0);
+  paramKnobs[LFO1_FREQUENCY_KNOB].init(1, 440, 2);
+  paramKnobs[LFO2_FREQUENCY_KNOB].init(1, 440, 3);
+  paramKnobs[WHAMMY_KNOB].init(0.25, 4, 1);
+  paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0);
+  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0);
+  paramKnobs[PORTAMENTO_KNOB].init(0, 50, 0);
+  paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0);
+  paramKnobs[VOLUME_KNOB].init(0, 1, 0.5);
+  paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1);
+  paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1);
 
   for(int i=0;i<8;i++) {
-    paramKnobs[i].isActive = false;
+    paramKnobs[i].isActive = true;
   }
   
   for(int i=0;i<18;i++) {
@@ -480,17 +490,6 @@ void setup() {
   distortionMixer.gain(0,0.5*distortionLevel);
   distortionMixer.gain(1,0.5*(1-distortionLevel));
 
-  // calibration
-  int testChannel = 6;
-  digitalWrite(SELECT_PINS_I[0], bitRead(testChannel, 0));
-  digitalWrite(SELECT_PINS_I[1], bitRead(testChannel, 1));
-  digitalWrite(SELECT_PINS_I[2], bitRead(testChannel, 2));
-  digitalWrite(SELECT_PINS_J[0], bitRead(testChannel, 0));
-  digitalWrite(SELECT_PINS_J[1], bitRead(testChannel, 1));
-  digitalWrite(SELECT_PINS_J[2], bitRead(testChannel, 2));
-  //Serial.println(touchRead(STRING_PIN));
-  //Serial.println(touchRead(FRET_PIN));
-  
   //glitchRecord.begin();
 }
 
@@ -533,7 +532,7 @@ void loop() {
       // only 3 groups hooked up for now
       if(i<8) {
         capacitance = 0;
-        //capacitance = fakeTouchRead(i*8+j);
+        capacitance = fakeTouchRead(i*8+j);
         //capacitance = touchRead(FRET_PIN);
         //Serial.println(capacitance);
         
@@ -589,12 +588,6 @@ void loop() {
         //knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
         paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
         //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
-        if(j==1) {
-          Serial.print(i);
-          Serial.print(" ");
-          Serial.println(analogRead(ANALOG_SENSOR_PINS[j]));
-          delay(500);
-        }
       }
     }
   }
@@ -604,8 +597,6 @@ void loop() {
     //glitchRecord.readBuffer();
     //glitchRecord.freeBuffer();
   //}
-
-  //Serial.println(paramKnobs[BIT_CRUSH_RATE_KNOB].getCurrentValue());
 
   filterCutoff = paramKnobs[FILTER_CUTOFF_KNOB].getCurrentValue();
   filterResonance = paramKnobs[FILTER_RESONANCE_KNOB].getCurrentValue();
@@ -617,64 +608,25 @@ void loop() {
   ampDecay = paramKnobs[AMP_DECAY_KNOB].getCurrentValue();
   ampSustain = paramKnobs[AMP_SUSTAIN_KNOB].getCurrentValue();
   ampReleaseLong = paramKnobs[AMP_RELEASE_KNOB].getCurrentValue();
-  //bitCrushResolution = paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].getCurrentValue();
-  //bitCrushRate = paramKnobs[BIT_CRUSH_RATE_KNOB].getCurrentValue();
-
-  // set parameter values
-  switch(999) {
-    case 666:
-    ampAttack = mapFloat(knobValues[0],0,1023,0,1000);
-    ampDecay = mapFloat(knobValues[1],0,1023,0,1000);
-    ampSustain = mapFloat(knobValues[2],0,1023,0,1);
-    ampReleaseShort = mapFloat(knobValues[3],0,1023,0,20000);
-    
-    case 0:
-    lfo1Level = mapFloat(knobValues[24],0,1023,0,1);
-    lfo2Level = mapFloat(knobValues[25],0,1023,0,1);
-    lfo1Frequency = mapFloat(knobValues[26],0,1023,1,200);
-    lfo2Frequency = mapFloat(knobValues[27],0,1023,1,200);
-    break;
-
-    case 1:
-    ampAttack = mapFloat(knobValues[24],0,1023,0,1000);
-    ampDecay = mapFloat(knobValues[25],0,1023,0,1000);
-    ampSustain = mapFloat(knobValues[26],0,1023,0,1);
-    ampReleaseShort = mapFloat(knobValues[27],0,1023,0,20000);
-    break;
-
-    case 2:
-    filterCutoff = mapFloat(knobValues[24],0,1023,1,1000);
-    filterResonance = mapFloat(knobValues[25],0,1023,0.7,5);
-    portamento = mapFloat(knobValues[26],0,1023,0,50);
-    lfo1Level = mapFloat(knobValues[27],0,1023,0,1);
-    break;
-
-    case 3:
-    filterAttack = mapFloat(knobValues[24],0,1023,0,1000);
-    filterDecay = mapFloat(knobValues[25],0,1023,0,1000);
-    filterSustain = mapFloat(knobValues[26],0,1023,0,1);
-    filterEnvelopeLevel = mapFloat(knobValues[27],0,1023,0,1);
-    break;
-
-    case 4:
-    mainVolume = mapFloat(knobValues[24],0,1023,0,1);
-    distortionLevel = mapFloat(knobValues[25],0,1023,0,1);
-    bitCrushRate = mapFloat(knobValues[26],0,1023,1,44100);
-    bitCrushResolution = mapFloat(knobValues[27],0,1023,2,16);
-    break;
-
-    case 5:
-    waveSelectPrevious = waveSelect;
-    waveSelectRaw = mapFloat(knobValues[24],0,1023,0,4.99);
-    waveSelect = floor(waveSelectRaw);
-    oscPulseWidth = max(0,min(1,waveSelectRaw-4));
-    whammy = mapFloat(knobValues[25],0,1023,0.25,4);
-    octaveFade = mapFloat(knobValues[26],0,1023,0,1);
-    octaveDelay = mapFloat(knobValues[27],0,1023,0,1000);
-    break;
-  }
+  bitCrushResolution = paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].getCurrentValue();
+  bitCrushRate = paramKnobs[BIT_CRUSH_RATE_KNOB].getCurrentValue();
+  lfo1Level = paramKnobs[LFO1_LEVEL_KNOB].getCurrentValue();
+  lfo2Level = paramKnobs[LFO2_LEVEL_KNOB].getCurrentValue();
+  lfo1Frequency = paramKnobs[LFO1_FREQUENCY_KNOB].getCurrentValue();
+  lfo2Frequency = paramKnobs[LFO2_FREQUENCY_KNOB].getCurrentValue();
+  portamento = paramKnobs[PORTAMENTO_KNOB].getCurrentValue();
+  whammy = paramKnobs[WHAMMY_KNOB].getCurrentValue();
+  octaveFade = paramKnobs[OCTAVE_FADE_KNOB].getCurrentValue();
+  octaveDelay = paramKnobs[OCTAVE_DELAY_KNOB].getCurrentValue();
+  waveSelectRaw = paramKnobs[WAVE_SELECT_KNOB].getCurrentValue();
+  mainVolume = paramKnobs[VOLUME_KNOB].getCurrentValue();
+  coarseTuning = paramKnobs[COARSE_TUNING_KNOB].getCurrentValue();
+  fineTuning = paramKnobs[FINE_TUNING_KNOB].getCurrentValue();
 
   // do stuff with parameters
+  waveSelectPrevious = waveSelect;
+  waveSelect = floor(waveSelectRaw);
+  oscPulseWidth = max(0,min(1,waveSelectRaw-4));
   ampRelease = useAmpReleaseLong?ampReleaseLong:ampReleaseShort;
   adjustOctaveVolumes();
   bitcrusher1.bits(bitCrushResolution);
@@ -716,7 +668,7 @@ void loop() {
     } else {
       currentFrequencies[i] -= amountToChange;
     }
-    oscillators[i]->frequency(whammy*currentFrequencies[i]);
+    oscillators[i]->frequency(whammy*coarseTuning*fineTuning*currentFrequencies[i]);
     oscillators[i+6]->frequency(2*whammy*currentFrequencies[i]);
     oscillators[i+12]->frequency(4*whammy*currentFrequencies[i]);
     if(waveSelect==4) {
