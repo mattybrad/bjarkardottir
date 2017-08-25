@@ -38,11 +38,6 @@ void ParamKnob::setValue(float realValue)
   }
 }
 
-void ParamKnob::updateValue()
-{
-  // unused
-}
-
 float ParamKnob::getCurrentValue()
 {
   return isActive ? _mapFloat(_currentValue,0,1023,_minValue,_maxValue) : _startValue;

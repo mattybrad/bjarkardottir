@@ -9,7 +9,6 @@ class ParamKnob
     ParamKnob();
     void init(float minValue, float maxValue, float startValue);
     void setValue(float realValue);
-    void updateValue();
     float getCurrentValue();
     bool isChanged();
     bool isActive;

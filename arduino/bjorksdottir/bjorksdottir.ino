@@ -198,9 +198,12 @@ int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 int activeKnobGroup = 1;
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
-  int returnPin = (group == activeKnobGroup) ? pin : tempKnobPin;
-  tempKnobPin ++;
-  return returnPin;
+  if(group == activeKnobGroup) {
+    return pin;
+  } else {
+    tempKnobPin ++;
+    return tempKnobPin;
+  }
 }
 
 // define knobs
@@ -213,21 +216,22 @@ int FILTER_SUSTAIN_KNOB = tempKnobFunction(0,4);
 int FILTER_RELEASE_KNOB = tempKnobFunction(0,5);
 int FILTER_ENVELOPE_KNOB = tempKnobFunction(0,6);
 int AMP_ATTACK_KNOB = tempKnobFunction(1,0);
-int AMP_SUSTAIN_KNOB = tempKnobFunction(1,1);
-int AMP_DECAY_KNOB = tempKnobFunction(1,2);
+int AMP_DECAY_KNOB = tempKnobFunction(1,1);
+int AMP_SUSTAIN_KNOB = tempKnobFunction(1,2);
 int AMP_RELEASE_KNOB = tempKnobFunction(1,3);
 int AMP_RELEASE2_KNOB = tempKnobFunction(1,4);
-int VOLUME_KNOB = tempKnobFunction(1,5);
-int DISTORTION_KNOB = tempKnobFunction(1,6);
-int BIT_CRUSH_KNOB = tempKnobFunction(1,7);
-int FINE_TUNING_KNOB = tempKnobFunction(0,0);
-int COARSE_TUNING_KNOB = tempKnobFunction(0,0);
-int LFO1_FREQUENCY_KNOB = tempKnobFunction(0,0);
-int LFO2_FREQUENCY_KNOB = tempKnobFunction(0,0);
-int WHAMMY_KNOB = tempKnobFunction(0,0);
-int OCTAVE_FADE_KNOB = tempKnobFunction(0,0);
-int OCTAVE_DELAY_KNOB = tempKnobFunction(0,0);
-int WAVEFORM_KNOB = tempKnobFunction(0,0);
+int DISTORTION_KNOB = tempKnobFunction(1,5);
+int BIT_CRUSH_RESOLUTION_KNOB = tempKnobFunction(1,6);
+int BIT_CRUSH_RATE_KNOB = tempKnobFunction(1,7);
+int VOLUME_KNOB = tempKnobFunction(2,0);
+int FINE_TUNING_KNOB = tempKnobFunction(2,0);
+int COARSE_TUNING_KNOB = tempKnobFunction(2,0);
+int LFO1_FREQUENCY_KNOB = tempKnobFunction(2,0);
+int LFO2_FREQUENCY_KNOB = tempKnobFunction(2,0);
+int WHAMMY_KNOB = tempKnobFunction(2,0);
+int OCTAVE_FADE_KNOB = tempKnobFunction(2,0);
+int OCTAVE_DELAY_KNOB = tempKnobFunction(2,0);
+int WAVEFORM_KNOB = tempKnobFunction(2,0);
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -426,9 +430,22 @@ void setup() {
   paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20);
   paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5);
   paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
+  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
+  paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16);
+  paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100);
+
+  Serial.println(AMP_ATTACK_KNOB);
+  Serial.println(AMP_DECAY_KNOB);
+  Serial.println(AMP_SUSTAIN_KNOB);
+  Serial.println(AMP_RELEASE_KNOB);
+  Serial.println(BIT_CRUSH_RESOLUTION_KNOB);
+  Serial.println(BIT_CRUSH_RATE_KNOB);
 
   for(int i=0;i<8;i++) {
-    paramKnobs[i].isActive = true;
+    paramKnobs[i].isActive = false;
   }
   
   for(int i=0;i<18;i++) {
@@ -500,9 +517,9 @@ void loop() {
   // 9 iterations, 1 for each multiplexer
   for(int i = 0; i < 8; i ++) {
     
-    digitalWrite(SELECT_PINS_I[0], bitRead(i%5, 0));
-    digitalWrite(SELECT_PINS_I[1], bitRead(i%5, 1));
-    digitalWrite(SELECT_PINS_I[2], bitRead(i%5, 2));
+    digitalWrite(SELECT_PINS_I[0], bitRead(i, 0));
+    digitalWrite(SELECT_PINS_I[1], bitRead(i, 1));
+    digitalWrite(SELECT_PINS_I[2], bitRead(i, 2));
 
     // 8 iterations, 1 for each multiplexer channel
     for(int j = 0; j < 8; j ++) {
@@ -569,9 +586,15 @@ void loop() {
       }
 
       if(j<4) {
-        knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
+        //knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
         paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
         //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
+        if(j==1) {
+          Serial.print(i);
+          Serial.print(" ");
+          Serial.println(analogRead(ANALOG_SENSOR_PINS[j]));
+          delay(500);
+        }
       }
     }
   }
@@ -582,7 +605,8 @@ void loop() {
     //glitchRecord.freeBuffer();
   //}
 
-  //ampAttack = paramKnobs[0].getCurrentValue();
+  //Serial.println(paramKnobs[BIT_CRUSH_RATE_KNOB].getCurrentValue());
+
   filterCutoff = paramKnobs[FILTER_CUTOFF_KNOB].getCurrentValue();
   filterResonance = paramKnobs[FILTER_RESONANCE_KNOB].getCurrentValue();
   filterAttack = paramKnobs[FILTER_ATTACK_KNOB].getCurrentValue();
@@ -593,6 +617,8 @@ void loop() {
   ampDecay = paramKnobs[AMP_DECAY_KNOB].getCurrentValue();
   ampSustain = paramKnobs[AMP_SUSTAIN_KNOB].getCurrentValue();
   ampReleaseLong = paramKnobs[AMP_RELEASE_KNOB].getCurrentValue();
+  //bitCrushResolution = paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].getCurrentValue();
+  //bitCrushRate = paramKnobs[BIT_CRUSH_RATE_KNOB].getCurrentValue();
 
   // set parameter values
   switch(999) {
