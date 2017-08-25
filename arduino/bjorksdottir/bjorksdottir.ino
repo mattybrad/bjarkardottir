@@ -195,7 +195,7 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
-int activeKnobGroup = 2;
+int activeKnobGroup = 3;
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
   if(group == activeKnobGroup) {
@@ -361,7 +361,7 @@ void setup() {
   pinMode(SELECT_PINS_J[0], OUTPUT);
   pinMode(SELECT_PINS_J[1], OUTPUT);
   pinMode(SELECT_PINS_J[2], OUTPUT);
-  pinMode(KILL_SWITCH_PIN, INPUT);
+  pinMode(KILL_SWITCH_PIN, INPUT_PULLUP);
   pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
    
   oscillators[0] = &waveform1A;
@@ -448,7 +448,7 @@ void setup() {
   paramKnobs[WHAMMY_KNOB].init(0.25, 4, 1);
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0);
   paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0);
-  paramKnobs[PORTAMENTO_KNOB].init(0, 50, 0);
+  paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50);
   paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0);
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5);
   paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1);
@@ -532,7 +532,7 @@ void loop() {
       // only 3 groups hooked up for now
       if(i<8) {
         capacitance = 0;
-        capacitance = fakeTouchRead(i*8+j);
+        //capacitance = fakeTouchRead(i*8+j);
         //capacitance = touchRead(FRET_PIN);
         //Serial.println(capacitance);
         
@@ -580,8 +580,8 @@ void loop() {
           nextNote[thisString+12] = -1;
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
-        //stringGroupMixerMaster.gain(0,killSwitch?0:1);
-        //stringGroupMixerMaster.gain(1,killSwitch?0:1);
+        stringGroupMixerMaster.gain(0,killSwitch?0:1);
+        stringGroupMixerMaster.gain(1,killSwitch?0:1);
       }
 
       if(j<4) {
