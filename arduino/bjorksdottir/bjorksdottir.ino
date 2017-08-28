@@ -363,6 +363,7 @@ void setup() {
   pinMode(SELECT_PINS_J[2], OUTPUT);
   pinMode(KILL_SWITCH_PIN, INPUT_PULLUP);
   pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
+  pinMode(STRING_PIN, INPUT_PULLUP);
    
   oscillators[0] = &waveform1A;
   oscillators[1] = &waveform2A;
@@ -530,9 +531,8 @@ void loop() {
         capacitance = 0;
         //capacitance = fakeTouchRead(i*8+j);
         //capacitance = touchRead(FRET_PIN);
-        //Serial.println(capacitance);
-        
         fretTouched = capacitance > fretTouchThreshold;
+        
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
         }
@@ -540,6 +540,7 @@ void loop() {
 
       thisString = STRING_MUX_PINS[j];
       if(thisString<6) {
+        delayMicroseconds(500);
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
         //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
@@ -551,6 +552,10 @@ void loop() {
         //Serial.print("\t");
         //Serial.println(touchReading);
         isTouched = touchReading > touchThreshold || touchReading < 0;
+
+        // use metal plectrum instead of touch
+        isTouched = !digitalRead(STRING_PIN);
+        
         if(!strings[thisString] && isTouched) {
           // string has just been pressed
           muteString(thisString);
@@ -642,6 +647,7 @@ void loop() {
   
   // set frequency of oscillators
   bool portamentoActive = portamento < 50;
+  portamentoActive = false;
   float amountToChange;
   float noteInterval;
   float deltaFreq;

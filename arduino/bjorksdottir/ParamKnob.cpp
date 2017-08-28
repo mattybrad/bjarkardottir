@@ -28,7 +28,7 @@ void ParamKnob::setValue(float realValue)
   //_currentValue = realValue;
   //_acceleration = 0.1 * delta;
   _changed = abs(delta) > 10;
-  _velocity = 0.01 * delta;
+  _velocity = 0.1 * delta;
 
   int thisTime = millis();
   int deltaTime = thisTime - _lastUpdateTime;
