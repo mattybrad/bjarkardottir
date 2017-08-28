@@ -540,7 +540,7 @@ void loop() {
 
       thisString = STRING_MUX_PINS[j];
       if(thisString<6) {
-        delayMicroseconds(500);
+        delayMicroseconds(5);
       
         // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
         //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
