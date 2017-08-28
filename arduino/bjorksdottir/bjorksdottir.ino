@@ -364,6 +364,7 @@ void setup() {
   pinMode(KILL_SWITCH_PIN, INPUT_PULLUP);
   pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
   pinMode(STRING_PIN, INPUT_PULLUP);
+  pinMode(FRET_PIN, INPUT_PULLUP);
    
   oscillators[0] = &waveform1A;
   oscillators[1] = &waveform2A;
@@ -523,15 +524,14 @@ void loop() {
       digitalWrite(SELECT_PINS_J[1], bitRead(j, 1));
       digitalWrite(SELECT_PINS_J[2], bitRead(j, 2));
 
+      delayMicroseconds(5); // stops everything from breaking
+
       thisString = STRING_LOOKUP[i][j];
       thisFret = FRET_LOOKUP[i][j];
 
       // only 3 groups hooked up for now
-      if(i<8) {
-        capacitance = 0;
-        //capacitance = fakeTouchRead(i*8+j);
-        //capacitance = touchRead(FRET_PIN);
-        fretTouched = capacitance > fretTouchThreshold;
+      if(i<3) {
+        fretTouched = !digitalRead(FRET_PIN);
         
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
@@ -540,20 +540,6 @@ void loop() {
 
       thisString = STRING_MUX_PINS[j];
       if(thisString<6) {
-        delayMicroseconds(5);
-      
-        // will use a more complex pressure-sensitive method later, but for now simple on/off for strings
-        //touchReading = touchReadTimeLim(STRING_PIN, touchTimeLimit); // using special function found on random teensy internet forum
-        //touchReading = touchRead(STRING_PIN);
-        touchReading = random(50000) ? 0 : touchThreshold + 1;
-        //int test = touchRead(STRING_PIN);
-        //Serial.println(touchReading);
-        //Serial.print(thisString);
-        //Serial.print("\t");
-        //Serial.println(touchReading);
-        isTouched = touchReading > touchThreshold || touchReading < 0;
-
-        // use metal plectrum instead of touch
         isTouched = !digitalRead(STRING_PIN);
         
         if(!strings[thisString] && isTouched) {
@@ -586,7 +572,6 @@ void loop() {
       }
 
       if(j<4) {
-        //knobValues[j*8+i] = analogRead(ANALOG_SENSOR_PINS[j]);
         paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
         //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
       }
@@ -647,7 +632,6 @@ void loop() {
   
   // set frequency of oscillators
   bool portamentoActive = portamento < 50;
-  portamentoActive = false;
   float amountToChange;
   float noteInterval;
   float deltaFreq;
@@ -697,15 +681,12 @@ void loop() {
 
     // fade LEDs
     if(stringLights[i]>0) {
-      stringLights[i] -= 10;
+      stringLights[i] -= 10; // this will need to be linked to loop time
       analogWrite(STRING_LIGHT_PINS[i], stringLights[i]);
     } else {
       digitalWrite(STRING_LIGHT_PINS[i], LOW);
     }
   }
-
-  //bitcrusher1.sampleRate(map(knobValues[0],0,1023,10,44100));
-  //lfo1.frequency(map(knobValues[0],0,1023,1,1000));
 
   timeTotal = millis() - timeStart;
   loopTime = timeTotal;
