@@ -286,7 +286,7 @@ float ampAttack = 0;
 float ampDecay = 50;
 float ampSustain = 0.3;
 bool useAmpReleaseLong = true;
-float ampReleaseLong = 15000; // for when a string is plucked
+float ampReleaseLong = 3000; // for when a string is plucked
 float ampReleaseShort = 50; // for when a string is muted
 float ampRelease = ampReleaseLong;
 float filterAttack = 2000;
@@ -427,27 +427,23 @@ void setup() {
 
   paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[LFO1_FREQUENCY_KNOB].init(1, 440, 2, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[LFO2_FREQUENCY_KNOB].init(1, 440, 3, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 1000, 2, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 1000, 3, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 100, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
@@ -561,14 +557,14 @@ void loop() {
         } else if(strings[thisString] && !isTouched) {
           // string has been released
           pluckString(thisString);
-        } else if(nextRelease[thisString] != -1 && millis() >= nextRelease[thisString]) {
-          envelopes[thisString]->noteOff();
-          filterEnvelopes[thisString]->noteOff();
-          envelopes[thisString+6]->noteOff();
-          envelopes[thisString+12]->noteOff();
-          nextRelease[thisString] = - 1;
-          nextRelease[thisString+6] = -1;
-          nextRelease[thisString+12] = -1;
+        } else {
+          for(int k=0;k<3;k++) {
+            if(nextRelease[thisString+k*6] != -1 && millis() >= nextRelease[thisString+k*6]) {
+              if(k==0) filterEnvelopes[thisString]->noteOff();
+              envelopes[thisString+k*6]->noteOff();
+              nextRelease[thisString+k*6] = - 1;
+            }
+          }
         }
         strings[thisString] = isTouched;
         if(nextNote[thisString+6] != -1 && millis() >= nextNote[thisString+6]) {
@@ -745,7 +741,9 @@ void pluckString(int string) {
   envelopes[string+12]->release(ampReleaseLong);
   nextRelease[string] = millis() + ampAttack + ampDecay; // waiting for attack and decay phases before triggering note off
   nextNote[string+6] = millis() + octaveDelay;
+  nextRelease[string+6] = millis() + octaveDelay + ampAttack + ampDecay;
   nextNote[string+12] = millis() + 2 * octaveDelay;
+  nextRelease[string+12] = millis() + 2 * octaveDelay + ampAttack + ampDecay;
 }
 
 void muteString(int string) {
