@@ -52,17 +52,27 @@ bool ParamKnob::isChanged()
 float ParamKnob::_doResponseCalculation(float x)
 {
   switch(_responseCurve) {
-    case 0:
+    case LINEAR_RESPONSE:
     return x;
     break;
 
-    case 1:
+    case QUADRATIC_RESPONSE:
     return x*x;
     break;
 
-    default:
-    return x;
+    case WHAMMY_RESPONSE:
+    float deadZoneStart = 0.4;
+    float deadZoneEnd = 0.6;
+    if(x<deadZoneStart) {
+      return _mapFloat(x,0,deadZoneStart,0.25,1);
+    } else if(x>deadZoneEnd) {
+      return _mapFloat(x,deadZoneEnd,1,1,4);
+    } else {
+      return 1;
+    }
+    break;
   }
+  return x;
 }
 
 float ParamKnob::_mapFloat(float x, float in_min, float in_max, float out_min, float out_max)

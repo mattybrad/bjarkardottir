@@ -195,7 +195,7 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
-int activeKnobGroup = 0;
+int activeKnobGroup = 3;
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
   if(group == activeKnobGroup) {
@@ -445,7 +445,7 @@ void setup() {
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_FREQUENCY_KNOB].init(1, 440, 2, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO2_FREQUENCY_KNOB].init(1, 440, 3, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[WHAMMY_KNOB].init(0.25, 4, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 100, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50, ParamKnob::LINEAR_RESPONSE);
