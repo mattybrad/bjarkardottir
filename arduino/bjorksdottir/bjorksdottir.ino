@@ -195,7 +195,7 @@ int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
-int activeKnobGroup = 3;
+int activeKnobGroup = 0;
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
   if(group == activeKnobGroup) {
@@ -425,34 +425,34 @@ void setup() {
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
 
-  paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500);
-  paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 1);
-  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1);
-  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20);
-  paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5);
-  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5);
-  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20);
-  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5);
-  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
-  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20);
-  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5);
-  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000);
-  paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16);
-  paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100);
-  paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0);
-  paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0);
-  paramKnobs[LFO1_FREQUENCY_KNOB].init(1, 440, 2);
-  paramKnobs[LFO2_FREQUENCY_KNOB].init(1, 440, 3);
-  paramKnobs[WHAMMY_KNOB].init(0.25, 4, 1);
-  paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0);
-  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0);
-  paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50);
-  paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0);
-  paramKnobs[VOLUME_KNOB].init(0, 1, 0.5);
-  paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1);
-  paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1);
+  paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[LFO1_FREQUENCY_KNOB].init(1, 440, 2, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[LFO2_FREQUENCY_KNOB].init(1, 440, 3, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[WHAMMY_KNOB].init(0.25, 4, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 100, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
 
   for(int i=0;i<8;i++) {
     paramKnobs[i].isActive = true;

@@ -14,11 +14,12 @@ ParamKnob::ParamKnob()
   _velocity = 0; // units: knob increments per second
 }
 
-void ParamKnob::init(float minValue, float maxValue, float startValue)
+void ParamKnob::init(float minValue, float maxValue, float startValue, int responseCurve)
 {
   _minValue = minValue;
   _maxValue = maxValue;
   _startValue = constrain(startValue, minValue, maxValue);
+  _responseCurve = responseCurve;
 }
 
 void ParamKnob::setValue(float realValue)
@@ -40,12 +41,28 @@ void ParamKnob::setValue(float realValue)
 
 float ParamKnob::getCurrentValue()
 {
-  return isActive ? _mapFloat(_currentValue,0,1023,_minValue,_maxValue) : _startValue;
+  return isActive ? _mapFloat(_doResponseCalculation(_currentValue/1023),0,1,_minValue,_maxValue) : _startValue;
 }
 
 bool ParamKnob::isChanged()
 {
   return _changed;
+}
+ 
+float ParamKnob::_doResponseCalculation(float x)
+{
+  switch(_responseCurve) {
+    case 0:
+    return x;
+    break;
+
+    case 1:
+    return x*x;
+    break;
+
+    default:
+    return x;
+  }
 }
 
 float ParamKnob::_mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
