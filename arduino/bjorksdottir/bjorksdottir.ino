@@ -238,9 +238,9 @@ int WAVE_SELECT_KNOB = tempKnobFunction(3,7);
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
-  {1,2,3,4,5,6,7,8},
-  {9,10,11,12,1,2,3,4},
-  {5,6,7,8,9,10,11,12},
+  {1,1,1,1,1,3,1,2},
+  {2,2,2,2,4,4,4,4},
+  {4,2,3,4,3,3,3,3},
   {1,2,3,4,5,6,7,8},
   {9,10,11,12,1,2,3,4},
   {5,6,7,8,9,10,11,12},
@@ -249,9 +249,9 @@ int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
   {5,6,7,8,9,10,11,12}
 };
 int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
-  {0,0,0,0,0,0,0,0},
-  {0,0,0,0,1,1,1,1},
-  {1,1,1,1,1,1,1,1},
+  {2,1,0,3,4,0,5,5},
+  {3,2,1,4,0,4,1,3},
+  {5,0,1,2,5,3,4,2},
   {2,2,2,2,2,2,2,2},
   {2,2,2,2,3,3,3,3},
   {3,3,3,3,3,3,3,3},
@@ -444,8 +444,8 @@ void setup() {
   paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 1000, 2, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 1000, 3, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
-  paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0.25, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[PORTAMENTO_KNOB].init(0, 55, 50, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WAVE_SELECT_KNOB].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
@@ -453,7 +453,7 @@ void setup() {
   paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
 
   for(int i=0;i<8;i++) {
-    paramKnobs[i].isActive = true;
+    //paramKnobs[i].isActive = true;
   }
   
   for(int i=0;i<18;i++) {
@@ -498,6 +498,7 @@ int thisString;
 bool isFirstNote = true;
 int loopTime = 80; // rough guess for first loop for now
 int loopCount = 0;
+int testNote = 0;
 void loop() {
 
   int capacitance;
@@ -509,9 +510,11 @@ void loop() {
 
   timeStart = millis();
 
-  loopCount = (loopCount + 1) % 10;
+  loopCount = (loopCount + 1) % 200;
+  if(loopCount == 0) testNote = (testNote + 1) % 6;
 
   // 9 iterations, 1 for each multiplexer
+  // yellow wires
   for(int i = 0; i < 8; i ++) {
     
     digitalWrite(SELECT_PINS_I[0], bitRead(i, 0));
@@ -519,12 +522,13 @@ void loop() {
     digitalWrite(SELECT_PINS_I[2], bitRead(i, 2));
 
     // 8 iterations, 1 for each multiplexer channel
+    // green wires
     for(int j = 0; j < 8; j ++) {
       digitalWrite(SELECT_PINS_J[0], bitRead(j, 0));
       digitalWrite(SELECT_PINS_J[1], bitRead(j, 1));
       digitalWrite(SELECT_PINS_J[2], bitRead(j, 2));
 
-      delayMicroseconds(5); // stops everything from breaking
+      delayMicroseconds(10); // stops everything from breaking
 
       thisString = STRING_LOOKUP[i][j];
       thisFret = FRET_LOOKUP[i][j];
@@ -534,6 +538,9 @@ void loop() {
         fretTouched = !digitalRead(FRET_PIN);
         
         if(fretTouched) {
+          Serial.print(thisString);
+          Serial.print("\t");
+          Serial.println(thisFret);
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
         }
       }
@@ -541,6 +548,8 @@ void loop() {
       thisString = STRING_MUX_PINS[j];
       if(thisString<6) {
         isTouched = !digitalRead(STRING_PIN);
+        //isTouched = random(100000) == 0;
+        isTouched = loopCount == 0 && testNote == thisString;
         
         if(!strings[thisString] && isTouched) {
           // string has just been pressed
@@ -567,6 +576,7 @@ void loop() {
           nextNote[thisString+12] = -1;
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
+        killSwitch = false;
         stringGroupMixerMaster.gain(0,killSwitch?0:1);
         stringGroupMixerMaster.gain(1,killSwitch?0:1);
       }
