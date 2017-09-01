@@ -236,6 +236,12 @@ int OCTAVE_FADE_KNOB = tempKnobFunction(3,5);
 int OCTAVE_DELAY_KNOB = tempKnobFunction(3,6);
 int WAVE_SELECT_KNOB = tempKnobFunction(3,7);
 
+// define routing
+int LFO1_TO_VCA = 0;
+int LFO1_TO_VCF = 1;
+int LFO2_TO_VCA = 0;
+int LFO2_TO_LFO1 = 1;
+
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
   {1,1,1,1,1,3,1,2},
@@ -315,6 +321,8 @@ int waveSelectPrevious = waveSelect;
 float whammy = 1;
 float coarseTuning = 1;
 float fineTuning = 1;
+int lfo1Dest = LFO1_TO_VCA;
+int lfo2Dest = LFO2_TO_VCA;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -365,6 +373,7 @@ void setup() {
   pinMode(KILL_SWITCH_LIGHT_PIN, OUTPUT);
   pinMode(STRING_PIN, INPUT_PULLUP);
   pinMode(FRET_PIN, INPUT_PULLUP);
+  pinMode(DIGITAL_SENSOR_PIN, INPUT);
    
   oscillators[0] = &waveform1A;
   oscillators[1] = &waveform2A;
@@ -453,7 +462,7 @@ void setup() {
   paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
 
   for(int i=0;i<8;i++) {
-    //paramKnobs[i].isActive = true;
+    paramKnobs[i].isActive = true;
   }
   
   for(int i=0;i<18;i++) {
@@ -507,6 +516,7 @@ void loop() {
   int thisString;
   int thisFret;
   long touchReading;
+  int digitalReading;
 
   timeStart = millis();
 
@@ -580,6 +590,18 @@ void loop() {
         //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
       }
     }
+
+    // toggle switches
+    digitalReading = digitalRead(DIGITAL_SENSOR_PIN);
+    switch(i) {
+      case 0:
+      lfo1Dest = digitalReading ? LFO1_TO_VCA : LFO1_TO_VCF;
+      break;
+
+      case 1:
+      lfo2Dest = digitalReading ? LFO2_TO_VCA : LFO2_TO_LFO1;
+      break;
+    }
   }
 
   // record glitch data
@@ -626,13 +648,17 @@ void loop() {
   finalMixer.gain(0,mainVolume);
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
-  float multiplier = 0.5;
-  if(lfo1Level+lfo2Level>1) {
-    multiplier = 0.5/(lfo1Level+lfo2Level);
+
+  // do funky vca calculation
+  float vcaMultiplier = 0.5;
+  float vcaLFO1Level = lfo1Dest == LFO1_TO_VCA ? lfo1Level : 0;
+  float vcaLFO2Level = lfo2Dest == LFO2_TO_VCA ? lfo2Level : 0;
+  if(vcaLFO1Level+vcaLFO2Level>1) {
+    vcaMultiplier = 0.5/(vcaLFO1Level+vcaLFO2Level);
   }
-  vcaSignalMixer.gain(0,1-multiplier*(lfo1Level+lfo2Level));
-  vcaSignalMixer.gain(1,multiplier*lfo1Level);
-  vcaSignalMixer.gain(2,multiplier*lfo2Level);
+  vcaSignalMixer.gain(0,1-vcaMultiplier*(vcaLFO1Level+vcaLFO2Level));
+  vcaSignalMixer.gain(1,vcaMultiplier*vcaLFO1Level);
+  vcaSignalMixer.gain(2,vcaMultiplier*vcaLFO2Level);
   
   // set frequency of oscillators
   bool portamentoActive = portamento < 50;
