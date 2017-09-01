@@ -241,23 +241,23 @@ int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
   {1,1,1,1,1,3,1,2},
   {2,2,2,2,4,4,4,4},
   {4,2,3,4,3,3,3,3},
-  {1,2,3,4,5,6,7,8},
-  {9,10,11,12,1,2,3,4},
-  {5,6,7,8,9,10,11,12},
-  {1,2,3,4,5,6,7,8},
-  {9,10,11,12,1,2,3,4},
-  {5,6,7,8,9,10,11,12}
+  {5,5,5,5,5,7,5,6},
+  {6,6,6,6,8,8,8,8},
+  {8,6,7,8,7,7,7,7},
+  {8,8,8,8,8,11,8,10},
+  {10,10,10,10,12,12,12,12},
+  {12,10,11,12,11,11,11,11}
 };
 int STRING_LOOKUP[NUM_FRET_GROUPS][8] = {
   {2,1,0,3,4,0,5,5},
   {3,2,1,4,0,4,1,3},
   {5,0,1,2,5,3,4,2},
-  {2,2,2,2,2,2,2,2},
-  {2,2,2,2,3,3,3,3},
-  {3,3,3,3,3,3,3,3},
-  {4,4,4,4,4,4,4,4},
-  {4,4,4,4,5,5,5,5},
-  {5,5,5,5,5,5,5,5}
+  {2,1,0,3,4,0,5,5},
+  {3,2,1,4,0,4,1,3},
+  {5,0,1,2,5,3,4,2},
+  {2,1,0,3,4,0,5,5},
+  {3,2,1,4,0,4,1,3},
+  {5,0,1,2,5,3,4,2}
 };
 //int guitarTuning[6] = {-2,5,10,14,17,22};
 int guitarTuning[6] = {0,5,10,15,19,24};
@@ -533,16 +533,10 @@ void loop() {
       thisString = STRING_LOOKUP[i][j];
       thisFret = FRET_LOOKUP[i][j];
 
-      // only 3 groups hooked up for now
-      if(i<3) {
-        fretTouched = !digitalRead(FRET_PIN);
-        
-        if(fretTouched) {
-          Serial.print(thisString);
-          Serial.print("\t");
-          Serial.println(thisFret);
-          stringPositions[thisString] = max(stringPositions[thisString], thisFret);
-        }
+      fretTouched = !digitalRead(FRET_PIN);
+      
+      if(fretTouched) {
+        stringPositions[thisString] = max(stringPositions[thisString], thisFret);
       }
 
       thisString = STRING_MUX_PINS[j];
