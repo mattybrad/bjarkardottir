@@ -470,7 +470,7 @@ void setup() {
   }
   
   for(int i=0;i<18;i++) {
-    oscillators[i]->begin(0.01,getFreq(44+5*i),getWaveform(waveSelect));
+    oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
@@ -478,7 +478,7 @@ void setup() {
     if(i<6) {
       filters[i]->frequency(filterCutoff);
       filters[i]->resonance(filterResonance);
-      filters[i]->octaveControl(2);
+      filters[i]->octaveControl(5);
       filterEnvelopes[i]->attack(filterAttack);
       filterEnvelopes[i]->decay(filterDecay);
       filterEnvelopes[i]->sustain(filterSustain);
@@ -490,7 +490,7 @@ void setup() {
   vcaDC.amplitude(1);
 
   squareWaveSmoothingFilter.frequency(1000);
-  lfo2.begin(1,5,WAVEFORM_SQUARE);
+  lfo2.begin(1,5,WAVEFORM_SINE);
   lfo1.amplitude(1);
   lfo1.frequency(3);
   vcaSignalMixer.gain(1,0);
@@ -665,12 +665,7 @@ void loop() {
   vcaSignalMixer.gain(2,vcaMultiplier*vcaLFO2Level);
 
   // lfo freq mod
-  lfo1FreqModMixer.gain(0,0);
-
-  // vcf
-  for(int i=0;i<6;i++) {
-    filterModMixers[i]->gain(1, lfo1Dest==LFO1_TO_VCF?0.5:0);
-  }
+  lfo1FreqModMixer.gain(0,lfo2Dest==LFO2_TO_LFO1?lfo2Level:0);
   
   // set frequency of oscillators
   bool portamentoActive = portamento < 50;
@@ -719,7 +714,7 @@ void loop() {
     filterEnvelopes[i]->sustain(filterSustain);
     filterEnvelopes[i]->release(filterRelease);
     filterModMixers[i]->gain(0, filterEnvelopeLevel);
-    filterModMixers[i]->gain(1, 0);
+    filterModMixers[i]->gain(1, lfo1Dest==LFO1_TO_VCF?lfo1Level:0);
 
     // fade LEDs
     if(stringLights[i]>0) {
