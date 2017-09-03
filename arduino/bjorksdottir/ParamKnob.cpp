@@ -60,6 +60,10 @@ float ParamKnob::_doResponseCalculation(float x)
     return x*x;
     break;
 
+    case CUBIC_RESPONSE:
+    return x*x*x;
+    break;
+
     case WHAMMY_RESPONSE:
     float deadZoneStart = 0.4;
     float deadZoneEnd = 0.6;

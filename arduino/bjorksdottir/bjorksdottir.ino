@@ -459,8 +459,8 @@ void setup() {
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 1000, 2, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 1000, 3, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 10000, 2, ParamKnob::CUBIC_RESPONSE);
+  paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 10000, 3, ParamKnob::CUBIC_RESPONSE);
   paramKnobs[LFO2_WAVE_SELECT].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0.25, ParamKnob::LINEAR_RESPONSE);

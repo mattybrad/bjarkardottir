@@ -9,7 +9,8 @@ class ParamKnob
     ParamKnob();
     static const int LINEAR_RESPONSE = 0;
     static const int QUADRATIC_RESPONSE = 1;
-    static const int WHAMMY_RESPONSE = 2;
+    static const int CUBIC_RESPONSE = 2;
+    static const int WHAMMY_RESPONSE = 3;
     void init(float minValue, float maxValue, float startValue, int responseCurve);
     void setValue(float realValue);
     float getCurrentValue();
