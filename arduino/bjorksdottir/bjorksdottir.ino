@@ -327,6 +327,7 @@ float coarseTuning = 1;
 float fineTuning = 1;
 int lfo1Dest = LFO1_TO_VCA;
 int lfo2Dest = LFO2_TO_VCA;
+bool safeMode = false;
 
 AudioSynthWaveform* oscillators[18];
 AudioEffectEnvelope* envelopes[18];
@@ -464,10 +465,6 @@ void setup() {
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
-
-  for(int i=0;i<8;i++) {
-    paramKnobs[i].isActive = true;
-  }
   
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
@@ -526,6 +523,11 @@ void loop() {
 
   loopCount = (loopCount + 1) % 200;
   if(loopCount == 0) testNote = (testNote + 1) % 6;
+
+  // just first 8 knobs until everything is wired up
+  for(int i=0;i<8;i++) {
+    paramKnobs[i].isActive = !safeMode;
+  }
 
   // 9 iterations, 1 for each multiplexer
   // yellow wires
@@ -604,6 +606,10 @@ void loop() {
 
       case 1:
       lfo2Dest = digitalReading ? LFO2_TO_VCA : LFO2_TO_LFO1;
+      break;
+
+      case 2:
+      safeMode = digitalReading;
       break;
     }
   }
