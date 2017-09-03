@@ -233,12 +233,13 @@ int COARSE_TUNING_KNOB = tempKnobFunction(2,2);
 int PORTAMENTO_KNOB = tempKnobFunction(2,3);
 int LFO1_FREQUENCY_KNOB = tempKnobFunction(3,0);
 int LFO2_FREQUENCY_KNOB = tempKnobFunction(3,1);
+int LFO2_WAVE_SELECT = tempKnobFunction(3,7);
 int LFO1_LEVEL_KNOB = tempKnobFunction(3,2);
 int LFO2_LEVEL_KNOB = tempKnobFunction(3,3);
 int WHAMMY_KNOB = tempKnobFunction(3,4);
 int OCTAVE_FADE_KNOB = tempKnobFunction(3,5);
 int OCTAVE_DELAY_KNOB = tempKnobFunction(3,6);
-int WAVE_SELECT_KNOB = tempKnobFunction(3,7);
+int WAVE_SELECT_KNOB = tempKnobFunction(0,7);
 
 // define routing
 int LFO1_TO_VCA = 0;
@@ -319,9 +320,12 @@ float mainVolume = 0.5;
 float bitCrushRate = 44100;
 float bitCrushResolution = 16;
 float waveSelectRaw = 0;
+float lfoWaveSelectRaw = 0;
 float oscPulseWidth = 0.5;
 int waveSelect = 0;
 int waveSelectPrevious = waveSelect;
+int lfoWaveSelect = 0;
+int lfoWaveSelectPrevious = lfoWaveSelect;
 float whammy = 1;
 float coarseTuning = 1;
 float fineTuning = 1;
@@ -457,6 +461,7 @@ void setup() {
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 1000, 2, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 1000, 3, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[LFO2_WAVE_SELECT].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0.25, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0, ParamKnob::QUADRATIC_RESPONSE);
@@ -641,6 +646,7 @@ void loop() {
   octaveFade = paramKnobs[OCTAVE_FADE_KNOB].getCurrentValue();
   octaveDelay = paramKnobs[OCTAVE_DELAY_KNOB].getCurrentValue();
   waveSelectRaw = paramKnobs[WAVE_SELECT_KNOB].getCurrentValue();
+  lfoWaveSelectRaw = paramKnobs[LFO2_WAVE_SELECT].getCurrentValue();
   mainVolume = paramKnobs[VOLUME_KNOB].getCurrentValue();
   coarseTuning = paramKnobs[COARSE_TUNING_KNOB].getCurrentValue();
   fineTuning = paramKnobs[FINE_TUNING_KNOB].getCurrentValue();
@@ -648,6 +654,8 @@ void loop() {
   // do stuff with parameters
   waveSelectPrevious = waveSelect;
   waveSelect = floor(waveSelectRaw);
+  lfoWaveSelectPrevious = lfoWaveSelect;
+  lfoWaveSelect = floor(lfoWaveSelectRaw);
   oscPulseWidth = max(0,min(1,waveSelectRaw-4));
   ampRelease = useAmpReleaseLong?ampReleaseLong:ampReleaseShort;
   adjustOctaveVolumes();
@@ -656,6 +664,7 @@ void loop() {
   distortionMixer.gain(0,distortionLevel);
   distortionMixer.gain(1,1-distortionLevel);
   finalMixer.gain(0,mainVolume);
+  if(lfoWaveSelect!=lfoWaveSelectPrevious) lfo2.begin(getWaveform(lfoWaveSelect));
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
 
