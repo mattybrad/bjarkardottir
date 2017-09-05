@@ -298,7 +298,7 @@ float ampDecay = 50;
 float ampSustain = 0.3;
 bool useAmpReleaseLong = true;
 float ampReleaseLong = 3000; // for when a string is plucked
-float ampReleaseShort = 50; // for when a string is muted
+float ampReleaseShort = 200; // for when a string is muted
 float ampRelease = ampReleaseLong;
 float filterAttack = 2000;
 float filterDecay = 2000;
@@ -331,6 +331,7 @@ float coarseTuning = 1;
 float fineTuning = 1;
 int lfo1Dest = LFO1_TO_VCA;
 int lfo2Dest = LFO2_TO_VCA;
+bool glitchMode = false;
 bool safeMode = false;
 
 AudioSynthWaveform* oscillators[18];
@@ -503,7 +504,7 @@ void setup() {
   distortionMixer.gain(0,0.5*distortionLevel);
   distortionMixer.gain(1,0.5*(1-distortionLevel));
 
-  //glitchRecord.begin();
+  glitchRecord.begin();
 }
 
 bool isTouched;
@@ -560,35 +561,39 @@ void loop() {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
       }
 
-      thisString = STRING_MUX_PINS[j];
-      if(thisString<6) {
-        isTouched = !digitalRead(STRING_PIN);
-        //isTouched = random(100000) == 0;
-        isTouched = loopCount == 0 && testNote == thisString;
-        
-        if(!strings[thisString] && isTouched) {
-          // string has just been pressed
-          muteString(thisString);
-        } else if(strings[thisString] && !isTouched) {
-          // string has been released
-          pluckString(thisString);
-        } else {
-          for(int k=0;k<3;k++) {
-            if(nextRelease[thisString+k*6] != -1 && millis() >= nextRelease[thisString+k*6]) {
-              if(k==0) filterEnvelopes[thisString]->noteOff();
-              envelopes[thisString+k*6]->noteOff();
-              nextRelease[thisString+k*6] = - 1;
-            }
+      if(i==0) {
+        thisString = STRING_MUX_PINS[j];
+        if(thisString<6) {
+          isTouched = !digitalRead(STRING_PIN);
+          //isTouched = loopCount == 0 && testNote == thisString;
+          
+          if(!strings[thisString] && isTouched) {
+            // string has just been pressed
+            muteString(thisString);
+          } else if(strings[thisString] && !isTouched) {
+            // string has been released
+            pluckString(thisString);
           }
-        }
-        strings[thisString] = isTouched;
-        if(nextNote[thisString+6] != -1 && millis() >= nextNote[thisString+6]) {
-          envelopes[thisString+6]->noteOn();
-          nextNote[thisString+6] = -1;
-        }
-        if(nextNote[thisString+12] != -1 && millis() >= nextNote[thisString+12]) {
-          envelopes[thisString+12]->noteOn();
-          nextNote[thisString+12] = -1;
+            for(int k=0;k<3;k++) {
+              if(nextRelease[thisString+k*6] != -1 && millis() >= nextRelease[thisString+k*6]) {
+                if(k==0) filterEnvelopes[thisString]->noteOff();
+                envelopes[thisString+k*6]->noteOff();
+                nextRelease[thisString+k*6] = - 1;
+              }
+            }
+          strings[thisString] = isTouched;
+          if(nextNote[thisString] != -1 && millis() >= nextNote[thisString]) {
+            envelopes[thisString]->noteOn();
+            nextNote[thisString] = -1;
+          }
+          if(nextNote[thisString+6] != -1 && millis() >= nextNote[thisString+6]) {
+            envelopes[thisString+6]->noteOn();
+            nextNote[thisString+6] = -1;
+          }
+          if(nextNote[thisString+12] != -1 && millis() >= nextNote[thisString+12]) {
+            envelopes[thisString+12]->noteOn();
+            nextNote[thisString+12] = -1;
+          }
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
         killSwitch = false;
@@ -616,14 +621,18 @@ void loop() {
       case 2:
       safeMode = digitalReading;
       break;
+
+      case 3:
+      glitchMode = digitalReading;
+      break;
     }
   }
 
   // record glitch data
-  //while(glitchRecord.available()) {
-    //glitchRecord.readBuffer();
-    //glitchRecord.freeBuffer();
-  //}
+  while(glitchRecord.available()) {
+    glitchRecord.readBuffer();
+    glitchRecord.freeBuffer();
+  }
 
   filterCutoff = paramKnobs[FILTER_CUTOFF_KNOB].getCurrentValue();
   filterResonance = paramKnobs[FILTER_RESONANCE_KNOB].getCurrentValue();
@@ -663,7 +672,8 @@ void loop() {
   bitcrusher1.sampleRate(bitCrushRate);
   distortionMixer.gain(0,distortionLevel);
   distortionMixer.gain(1,1-distortionLevel);
-  finalMixer.gain(0,mainVolume);
+  finalMixer.gain(0,glitchMode?0:mainVolume);
+  finalMixer.gain(1,glitchMode?mainVolume:0);
   if(lfoWaveSelect!=lfoWaveSelectPrevious) lfo2.begin(getWaveform(lfoWaveSelect));
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
@@ -739,7 +749,6 @@ void loop() {
       digitalWrite(STRING_LIGHT_PINS[i], LOW);
     }
   }
-
   timeTotal = millis() - timeStart;
   loopTime = timeTotal;
   //Serial.print("TIME:");
@@ -771,13 +780,13 @@ int fakeTouchRead(int pin) {
 }
 
 void pluckString(int string) {
-  envelopes[string]->noteOn();
   filterEnvelopes[string]->noteOn();
   stringLights[string] = 255;
   useAmpReleaseLong = true;
-  envelopes[string]->release(ampReleaseLong);
-  envelopes[string+6]->release(ampReleaseLong);
-  envelopes[string+12]->release(ampReleaseLong);
+  //envelopes[string]->release(ampReleaseLong);
+  //envelopes[string+6]->release(ampReleaseLong);
+  //envelopes[string+12]->release(ampReleaseLong);
+  nextNote[string] = millis();
   nextRelease[string] = millis() + ampAttack + ampDecay; // waiting for attack and decay phases before triggering note off
   nextNote[string+6] = millis() + octaveDelay;
   nextRelease[string+6] = millis() + octaveDelay + ampAttack + ampDecay;
@@ -787,12 +796,12 @@ void pluckString(int string) {
 
 void muteString(int string) {
   useAmpReleaseLong = false;
-  envelopes[string]->release(ampReleaseShort);
-  envelopes[string]->noteOff();
-  envelopes[string+6]->release(ampReleaseShort);
-  envelopes[string+6]->noteOff();
-  envelopes[string+12]->release(ampReleaseShort);
-  envelopes[string+12]->noteOff();
+  //envelopes[string]->release(ampReleaseShort);
+  nextRelease[string] = millis();
+  //envelopes[string+6]->release(ampReleaseShort);
+  nextRelease[string+6] = millis();
+  //envelopes[string+12]->release(ampReleaseShort);
+  nextRelease[string+12] = millis();
   filterEnvelopes[string]->noteOff();
 }
 
