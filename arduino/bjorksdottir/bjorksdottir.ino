@@ -299,7 +299,7 @@ float ampSustain = 0.3;
 bool useAmpReleaseLong = true;
 float ampReleaseLong = 3000; // for when a string is plucked
 float ampReleaseShort = 200; // for when a string is muted
-float ampRelease = ampReleaseLong;
+float ampRelease = 50;
 float filterAttack = 2000;
 float filterDecay = 2000;
 float filterSustain = 0.1;
@@ -453,8 +453,8 @@ void setup() {
   paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 20, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 2000, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
@@ -515,6 +515,7 @@ bool isFirstNote = true;
 int loopTime = 80; // rough guess for first loop for now
 int loopCount = 0;
 int testNote = 0;
+int lastStringChange[6] = {0,0,0,0,0,0};
 void loop() {
 
   int capacitance;
@@ -522,7 +523,7 @@ void loop() {
   int stringPositions[6] = {0,0,0,0,0,0};
   int thisString;
   int thisFret;
-  long touchReading;
+  bool stringTouched;
   int digitalReading;
 
   timeStart = millis();
@@ -564,35 +565,19 @@ void loop() {
       if(i==0) {
         thisString = STRING_MUX_PINS[j];
         if(thisString<6) {
-          isTouched = !digitalRead(STRING_PIN);
-          //isTouched = loopCount == 0 && testNote == thisString;
-          
-          if(!strings[thisString] && isTouched) {
-            // string has just been pressed
-            muteString(thisString);
-          } else if(strings[thisString] && !isTouched) {
-            // string has been released
-            pluckString(thisString);
-          }
-            for(int k=0;k<3;k++) {
-              if(nextRelease[thisString+k*6] != -1 && millis() >= nextRelease[thisString+k*6]) {
-                if(k==0) filterEnvelopes[thisString]->noteOff();
-                envelopes[thisString+k*6]->noteOff();
-                nextRelease[thisString+k*6] = - 1;
+          // new logic goes here
+          if(millis()-lastStringChange[thisString] > 30) {
+            stringTouched = !digitalRead(STRING_PIN);
+            if(stringTouched != strings[thisString]) {
+              // change detected
+              lastStringChange[thisString] = millis();
+              strings[thisString] = stringTouched;
+              if(stringTouched) {
+                envelopes[thisString]->noteOff();
+              } else {
+                envelopes[thisString]->noteOn();
               }
             }
-          strings[thisString] = isTouched;
-          if(nextNote[thisString] != -1 && millis() >= nextNote[thisString]) {
-            envelopes[thisString]->noteOn();
-            nextNote[thisString] = -1;
-          }
-          if(nextNote[thisString+6] != -1 && millis() >= nextNote[thisString+6]) {
-            envelopes[thisString+6]->noteOn();
-            nextNote[thisString+6] = -1;
-          }
-          if(nextNote[thisString+12] != -1 && millis() >= nextNote[thisString+12]) {
-            envelopes[thisString+12]->noteOn();
-            nextNote[thisString+12] = -1;
           }
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
@@ -728,7 +713,7 @@ void loop() {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
       envelopes[i+6*j]->sustain(ampSustain);
-      envelopes[i+6*j]->release(ampRelease);
+      //envelopes[i+6*j]->release(ampRelease);
     }
 
     // filters
