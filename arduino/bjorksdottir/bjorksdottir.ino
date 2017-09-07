@@ -573,17 +573,32 @@ void loop() {
               lastStringChange[thisString] = millis();
               strings[thisString] = stringTouched;
               if(stringTouched) {
-                envelopes[thisString]->noteOff();
-                nextRelease[thisString]=-1;
+                // mute string
+                for(int k=0;k<3;k++) {
+                  envelopes[thisString+k*6]->release(ampReleaseShort);
+                  envelopes[thisString+k*6]->noteOff();
+                  nextRelease[thisString+k*6]=-1;
+                }
+                //useAmpReleaseLong = false; // may not do anything
               } else {
-                envelopes[thisString]->noteOn();
-                nextRelease[thisString] = millis() + 2000;
+                // schedule notes
+                for(int k=0;k<3;k++) {
+                  nextNote[thisString+k*6] = millis() + k*octaveDelay;
+                }
+                //useAmpReleaseLong = true; // may not do anything
               }
             }
           }
-          if(nextRelease[thisString]!=-1 && millis()>=nextRelease[thisString]) {
-            envelopes[thisString]->noteOff();
-            nextRelease[thisString]=-1;
+          for(int k=0;k<3;k++) {
+            if(nextNote[thisString+k*6]!=-1 && millis()>=nextNote[thisString+k*6]) {
+              envelopes[thisString+k*6]->release(ampReleaseLong);
+              envelopes[thisString+k*6]->noteOn();
+              nextRelease[thisString+k*6] = millis() + ampAttack + ampDecay;
+              nextNote[thisString+k*6] = -1;
+            } else if(nextRelease[thisString+k*6]!=-1 && millis()>=nextRelease[thisString+k*6]) {
+              envelopes[thisString+k*6]->noteOff();
+              nextRelease[thisString+k*6]=-1;
+            }
           }
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
@@ -719,7 +734,7 @@ void loop() {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
       envelopes[i+6*j]->sustain(ampSustain);
-      //envelopes[i+6*j]->release(ampRelease);
+      envelopes[i+6*j]->release(ampRelease);
     }
 
     // filters
@@ -768,32 +783,6 @@ int fakeTouchRead(int pin) {
     returnValue = pin == 14 || pin == 25 ? 100000 : 100;
   }
   return returnValue;
-}
-
-void pluckString(int string) {
-  filterEnvelopes[string]->noteOn();
-  stringLights[string] = 255;
-  useAmpReleaseLong = true;
-  //envelopes[string]->release(ampReleaseLong);
-  //envelopes[string+6]->release(ampReleaseLong);
-  //envelopes[string+12]->release(ampReleaseLong);
-  nextNote[string] = millis();
-  nextRelease[string] = millis() + ampAttack + ampDecay; // waiting for attack and decay phases before triggering note off
-  nextNote[string+6] = millis() + octaveDelay;
-  nextRelease[string+6] = millis() + octaveDelay + ampAttack + ampDecay;
-  nextNote[string+12] = millis() + 2 * octaveDelay;
-  nextRelease[string+12] = millis() + 2 * octaveDelay + ampAttack + ampDecay;
-}
-
-void muteString(int string) {
-  useAmpReleaseLong = false;
-  //envelopes[string]->release(ampReleaseShort);
-  nextRelease[string] = millis();
-  //envelopes[string+6]->release(ampReleaseShort);
-  nextRelease[string+6] = millis();
-  //envelopes[string+12]->release(ampReleaseShort);
-  nextRelease[string+12] = millis();
-  filterEnvelopes[string]->noteOff();
 }
 
 void adjustOctaveVolumes() {
