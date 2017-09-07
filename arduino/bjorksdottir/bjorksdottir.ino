@@ -289,6 +289,7 @@ int touchTimeLimit = 50 * 1000; // in microseconds, apparently
 
 int nextRelease[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 int nextNote[18] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+int nextFilterRelease[6] = {-1,-1,-1,-1,-1,-1};
 
 float maxPeak = 0.0;
 
@@ -448,10 +449,10 @@ void setup() {
 
   paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 3, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 20, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 500, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.2, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.3, ParamKnob::LINEAR_RESPONSE);
@@ -579,13 +580,13 @@ void loop() {
                   envelopes[thisString+k*6]->noteOff();
                   nextRelease[thisString+k*6]=-1;
                 }
-                //useAmpReleaseLong = false; // may not do anything
+                filterEnvelopes[thisString]->noteOff();
+                nextFilterRelease[thisString]=-1;
               } else {
                 // schedule notes
                 for(int k=0;k<3;k++) {
                   nextNote[thisString+k*6] = millis() + k*octaveDelay;
                 }
-                //useAmpReleaseLong = true; // may not do anything
               }
             }
           }
@@ -594,11 +595,19 @@ void loop() {
               envelopes[thisString+k*6]->release(ampReleaseLong);
               envelopes[thisString+k*6]->noteOn();
               nextRelease[thisString+k*6] = millis() + ampAttack + ampDecay;
+              if(k==0) {
+                filterEnvelopes[thisString]->noteOn();
+                nextFilterRelease[thisString] = millis() + filterAttack + filterDecay;
+              }
               nextNote[thisString+k*6] = -1;
             } else if(nextRelease[thisString+k*6]!=-1 && millis()>=nextRelease[thisString+k*6]) {
               envelopes[thisString+k*6]->noteOff();
               nextRelease[thisString+k*6]=-1;
             }
+          }
+          if(nextFilterRelease[thisString]!=-1 && millis()>=nextFilterRelease[thisString]) {
+            filterEnvelopes[thisString]->noteOff();
+            nextFilterRelease[thisString]=-1;
           }
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
@@ -734,7 +743,6 @@ void loop() {
       envelopes[i+6*j]->attack(ampAttack);
       envelopes[i+6*j]->decay(ampDecay);
       envelopes[i+6*j]->sustain(ampSustain);
-      envelopes[i+6*j]->release(ampRelease);
     }
 
     // filters
