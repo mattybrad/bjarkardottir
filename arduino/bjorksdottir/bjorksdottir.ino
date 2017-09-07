@@ -449,10 +449,10 @@ void setup() {
 
   paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 3, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 500, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 5, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[FILTER_DECAY_KNOB].init(0, 1000, 5, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.2, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.3, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.3, ParamKnob::LINEAR_RESPONSE);
@@ -586,6 +586,8 @@ void loop() {
                 // schedule notes
                 for(int k=0;k<3;k++) {
                   nextNote[thisString+k*6] = millis() + k*octaveDelay;
+                  nextRelease[thisString+k*6]=-1;
+                  nextFilterRelease[thisString+k*6]=-1;
                 }
               }
             }
@@ -794,9 +796,11 @@ int fakeTouchRead(int pin) {
 }
 
 void adjustOctaveVolumes() {
+  float reduction = 1 - 0.4 * octaveFade; // slight reduction in volume to compensate for more oscillators
   for(int i=0;i<6;i++) {
-    stringMixers[i]->gain(1,min(1,octaveFade*2));
-    stringMixers[i]->gain(2,max(0,octaveFade*2-1));
+    stringMixers[i]->gain(0,reduction);
+    stringMixers[i]->gain(1,reduction*constrain(octaveFade*2,0,1));
+    stringMixers[i]->gain(2,reduction*constrain(octaveFade*2-1,0,1));
   }
 }
 
