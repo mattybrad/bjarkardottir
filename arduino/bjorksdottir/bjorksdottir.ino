@@ -453,8 +453,8 @@ void setup() {
   paramKnobs[FILTER_SUSTAIN_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FILTER_ENVELOPE_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 2000, ParamKnob::QUADRATIC_RESPONSE);
-  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.3, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
@@ -574,10 +574,16 @@ void loop() {
               strings[thisString] = stringTouched;
               if(stringTouched) {
                 envelopes[thisString]->noteOff();
+                nextRelease[thisString]=-1;
               } else {
                 envelopes[thisString]->noteOn();
+                nextRelease[thisString] = millis() + 2000;
               }
             }
+          }
+          if(nextRelease[thisString]!=-1 && millis()>=nextRelease[thisString]) {
+            envelopes[thisString]->noteOff();
+            nextRelease[thisString]=-1;
           }
         }
         killSwitch = digitalRead(KILL_SWITCH_PIN);
