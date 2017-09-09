@@ -456,7 +456,7 @@ void setup() {
   paramKnobs[AMP_ATTACK_KNOB].init(0, 1000, 0.1, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_DECAY_KNOB].init(0, 1000, 100, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[AMP_SUSTAIN_KNOB].init(0, 1, 0.3, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 5000, ParamKnob::QUADRATIC_RESPONSE);
+  paramKnobs[AMP_RELEASE_KNOB].init(0, 10000, 20000, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[BIT_CRUSH_RESOLUTION_KNOB].init(2, 16, 16, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
@@ -637,6 +637,7 @@ void loop() {
 
       case 2:
       safeMode = digitalReading;
+      safeMode = true;
       break;
 
       case 3:
