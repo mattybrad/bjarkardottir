@@ -79,6 +79,7 @@ AudioEffectMultiply      vca1;           //xy=1599,484
 AudioEffectWaveshaper    waveshape1;     //xy=1700,418
 AudioMixer4              distortionMixer; //xy=1832,475
 AudioEffectBitcrusher    bitcrusher1;    //xy=1967,405
+AudioPlayMemory          startSound;       //xy=2015,307
 AudioPlayQueue           glitch;         //xy=2036,484
 AudioMixer4              finalMixer;     //xy=2154,409
 AudioOutputI2S           i2s1;           //xy=2326,296
@@ -172,14 +173,20 @@ AudioConnection          patchCord85(waveshape1, 0, distortionMixer, 0);
 AudioConnection          patchCord86(distortionMixer, bitcrusher1);
 AudioConnection          patchCord87(distortionMixer, glitchRecord);
 AudioConnection          patchCord88(bitcrusher1, 0, finalMixer, 0);
-AudioConnection          patchCord89(glitch, 0, finalMixer, 1);
-AudioConnection          patchCord90(finalMixer, peak1);
-AudioConnection          patchCord91(finalMixer, 0, i2s1, 0);
-AudioConnection          patchCord92(finalMixer, 0, i2s1, 1);
+AudioConnection          patchCord89(startSound, 0, finalMixer, 2);
+AudioConnection          patchCord90(glitch, 0, finalMixer, 1);
+AudioConnection          patchCord91(finalMixer, peak1);
+AudioConnection          patchCord92(finalMixer, 0, i2s1, 0);
+AudioConnection          patchCord93(finalMixer, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=1222,68
 // GUItool: end automatically generated code
 
-
+#include "AudioSampleSega.h"
+#include "AudioSampleWindows.h"
+#include "AudioSampleWorms.h"
+#include "AudioSampleLemmings.h"
+#include "AudioSampleMariokart.h"
+#include "AudioSamplePrinceofpersia.h"
 #include "ParamKnob.h"
 
 // define how many things there are
@@ -363,6 +370,8 @@ float WAVESHAPE_EXAMPLE[17] = {
 };
 
 void setup() {
+  randomSeed(analogRead(14)); // i think 14 is fine?
+  
   AudioMemory(50);
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
@@ -505,7 +514,28 @@ void setup() {
   distortionMixer.gain(0,0.5*distortionLevel);
   distortionMixer.gain(1,0.5*(1-distortionLevel));
 
-  glitchRecord.begin();
+  //glitchRecord.begin();
+  switch(random(6)) {
+    case 0:
+    startSound.play(AudioSampleSega);
+    break;
+    case 1:
+    startSound.play(AudioSampleWindows);
+    break;
+    case 2:
+    startSound.play(AudioSampleWorms);
+    break;
+    case 3:
+    startSound.play(AudioSampleMariokart);
+    break;
+    case 4:
+    startSound.play(AudioSamplePrinceofpersia);
+    break;
+    case 5:
+    startSound.play(AudioSampleLemmings);
+    break;
+  }
+  
 }
 
 bool isTouched;
