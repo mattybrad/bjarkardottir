@@ -593,10 +593,6 @@ void loop() {
       
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
-        Serial.print(i);
-        Serial.print("\t");
-        Serial.println(j);
-        delay(100);
       }
 
       if(i==0) {
