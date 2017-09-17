@@ -204,6 +204,7 @@ int FRET_PIN = 16;
 int KILL_SWITCH_PIN = 24;
 int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
+int FRET_MUX_GROUPS[9] = {7,6,3,8,1,5,2,4,0}; // the neck is wired confusingly - this sorts out which multiplexer to read from
 int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
 
 int activeKnobGroup = 3;
@@ -515,6 +516,7 @@ void setup() {
   distortionMixer.gain(1,0.5*(1-distortionLevel));
 
   //glitchRecord.begin();
+  
   switch(random(6)) {
     case 0:
     startSound.play(AudioSampleSega);
@@ -584,13 +586,17 @@ void loop() {
 
       delayMicroseconds(10); // stops everything from breaking
 
-      thisString = STRING_LOOKUP[i][j];
-      thisFret = FRET_LOOKUP[i][j];
+      thisString = STRING_LOOKUP[FRET_MUX_GROUPS[i]][j];
+      thisFret = FRET_LOOKUP[FRET_MUX_GROUPS[i]][j];
 
       fretTouched = !digitalRead(FRET_PIN);
       
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+        Serial.print(i);
+        Serial.print("\t");
+        Serial.println(j);
+        delay(100);
       }
 
       if(i==0) {
