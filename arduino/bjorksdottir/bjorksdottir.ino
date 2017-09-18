@@ -546,6 +546,7 @@ bool isTouched;
 long timeStart;
 long timeTotal;
 int thisString;
+int thisFret;
 bool isFirstNote = true;
 int loopTime = 80; // rough guess for first loop for now
 int loopCount = 0;
@@ -556,8 +557,6 @@ void loop() {
   int capacitance;
   bool fretTouched;
   int stringPositions[6] = {0,0,0,0,0,0};
-  int thisString;
-  int thisFret;
   bool stringTouched;
   int digitalReading;
 
@@ -603,6 +602,13 @@ void loop() {
       }
 
       if(i==0) {
+
+        /*  Documenting this deep weirdness here. Sometimes (about half the time?)
+         *  the fret number comes back as -1 for the D, G, B and E strings.
+         *  But now I can't reproduce the error!! Agh! Okay, going to leave the
+         *  serial prints in just in case it does it again. Take these out later.
+         */
+        
         thisString = STRING_LOOKUP[FRET_MUX_GROUPS[8]][j];
         thisFret = FRET_LOOKUP[FRET_MUX_GROUPS[8]][j];
   
@@ -610,6 +616,17 @@ void loop() {
         
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+          Serial.print(j);
+          Serial.print("\t");
+          Serial.print(thisString);
+          Serial.print("\t");
+          Serial.println(thisFret);
+          Serial.print("\t");
+          Serial.println(FRET_MUX_GROUPS[8]);
+          for(int k=0;k<8;k++) {
+            Serial.print(FRET_LOOKUP[FRET_MUX_GROUPS[8]][k]);
+          }
+          Serial.println("");
         }
       }
 
