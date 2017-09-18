@@ -201,6 +201,7 @@ int ANALOG_SENSOR_PINS[4] = {34,33,31,32};
 int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
+int EXTRA_FRET_MUX_PIN = 25;
 int KILL_SWITCH_PIN = 24;
 int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
@@ -325,7 +326,7 @@ float octaveDelay = 40;
 float octaveFade = 0; // 0 is 6-string mode, 0.5 is 12-string, 1 is 18-string
 bool killSwitch = false;
 float portamento = 1000;
-float mainVolume = 0.5;
+float mainVolume = 0.3;
 float bitCrushRate = 44100;
 float bitCrushResolution = 16;
 float waveSelectRaw = 0;
@@ -395,7 +396,7 @@ void setup() {
   pinMode(STRING_PIN, INPUT_PULLUP);
   pinMode(FRET_PIN, INPUT_PULLUP);
   pinMode(DIGITAL_SENSOR_PIN, INPUT);
-  pinMode(25, INPUT_PULLUP);
+  pinMode(EXTRA_FRET_MUX_PIN, INPUT_PULLUP);
    
   oscillators[0] = &waveform1A;
   oscillators[1] = &waveform2A;
@@ -605,7 +606,7 @@ void loop() {
         thisString = STRING_LOOKUP[FRET_MUX_GROUPS[8]][j];
         thisFret = FRET_LOOKUP[FRET_MUX_GROUPS[8]][j];
   
-        fretTouched = !digitalRead(25);
+        fretTouched = !digitalRead(EXTRA_FRET_MUX_PIN);
         
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
@@ -741,6 +742,7 @@ void loop() {
   distortionMixer.gain(1,1-distortionLevel);
   finalMixer.gain(0,glitchMode?0:mainVolume);
   finalMixer.gain(1,glitchMode?mainVolume:0);
+  finalMixer.gain(2,0.3*mainVolume);
   if(lfoWaveSelect!=lfoWaveSelectPrevious) lfo2.begin(getWaveform(lfoWaveSelect));
   lfo1.frequency(lfo1Frequency);
   lfo2.frequency(lfo2Frequency);
@@ -833,16 +835,6 @@ void loop() {
 
 float getFreq(float noteNum) {
   return pow(2, (noteNum-49)/12) * 440;
-}
-
-int fakeTouchRead(int pin) {
-  int returnValue;
-  if(millis() % 6000 < 3000) {
-    returnValue = pin == 2 || pin == 13 ? 100000 : 100;
-  } else {
-    returnValue = pin == 14 || pin == 25 ? 100000 : 100;
-  }
-  return returnValue;
 }
 
 void adjustOctaveVolumes() {
