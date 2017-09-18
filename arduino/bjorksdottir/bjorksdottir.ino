@@ -395,6 +395,7 @@ void setup() {
   pinMode(STRING_PIN, INPUT_PULLUP);
   pinMode(FRET_PIN, INPUT_PULLUP);
   pinMode(DIGITAL_SENSOR_PIN, INPUT);
+  pinMode(25, INPUT_PULLUP);
    
   oscillators[0] = &waveform1A;
   oscillators[1] = &waveform2A;
@@ -586,6 +587,11 @@ void loop() {
 
       delayMicroseconds(10); // stops everything from breaking
 
+      // this is hacky, but just roll with it
+      // there are nine multiplexers in the neck, but only eight channels to read them
+      // so the ninth neck multiplexer is read by a separate pin
+      // i tried not to use copy-pasted repeated code but it kept breaking so i gave up
+
       thisString = STRING_LOOKUP[FRET_MUX_GROUPS[i]][j];
       thisFret = FRET_LOOKUP[FRET_MUX_GROUPS[i]][j];
 
@@ -593,6 +599,17 @@ void loop() {
       
       if(fretTouched) {
         stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+      }
+
+      if(i==0) {
+        thisString = STRING_LOOKUP[FRET_MUX_GROUPS[8]][j];
+        thisFret = FRET_LOOKUP[FRET_MUX_GROUPS[8]][j];
+  
+        fretTouched = !digitalRead(25);
+        
+        if(fretTouched) {
+          stringPositions[thisString] = max(stringPositions[thisString], thisFret);
+        }
       }
 
       if(i==0) {
