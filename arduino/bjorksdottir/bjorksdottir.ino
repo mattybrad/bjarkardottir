@@ -206,17 +206,18 @@ int KILL_SWITCH_PIN = 24;
 int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int FRET_MUX_GROUPS[9] = {7,6,3,8,1,5,2,4,0}; // the neck is wired confusingly - this sorts out which multiplexer to read from
-int STRING_LIGHT_PINS[6] = {20,21,38,37,36,35};
+int STRING_LIGHT_PINS[6] = {21,20,38,37,36,35};
 
-int activeKnobGroup = 3;
+int activeKnobGroup = 2; // 0 ok, 1 ok, 2 bad, 3 ok
 int tempKnobPin = 8;
 int tempKnobFunction(int group, int pin) {
-  if(group == activeKnobGroup) {
+  return group*8+pin; // all knobs wired up, should be fine now?
+  /*if(group == activeKnobGroup) {
     return pin;
   } else {
     tempKnobPin ++;
     return tempKnobPin;
-  }
+  }*/
 }
 
 // define knobs
@@ -228,6 +229,7 @@ int FILTER_DECAY_KNOB = tempKnobFunction(0,3);
 int FILTER_SUSTAIN_KNOB = tempKnobFunction(0,4);
 int FILTER_RELEASE_KNOB = tempKnobFunction(0,5);
 int FILTER_ENVELOPE_KNOB = tempKnobFunction(0,6);
+int WAVE_SELECT_KNOB = tempKnobFunction(0,7);
 int AMP_ATTACK_KNOB = tempKnobFunction(1,0);
 int AMP_DECAY_KNOB = tempKnobFunction(1,1);
 int AMP_SUSTAIN_KNOB = tempKnobFunction(1,2);
@@ -242,13 +244,12 @@ int COARSE_TUNING_KNOB = tempKnobFunction(2,2);
 int PORTAMENTO_KNOB = tempKnobFunction(2,3);
 int LFO1_FREQUENCY_KNOB = tempKnobFunction(3,0);
 int LFO2_FREQUENCY_KNOB = tempKnobFunction(3,1);
-int LFO2_WAVE_SELECT = tempKnobFunction(3,7);
 int LFO1_LEVEL_KNOB = tempKnobFunction(3,2);
 int LFO2_LEVEL_KNOB = tempKnobFunction(3,3);
 int WHAMMY_KNOB = tempKnobFunction(3,4);
 int OCTAVE_FADE_KNOB = tempKnobFunction(3,5);
 int OCTAVE_DELAY_KNOB = tempKnobFunction(3,6);
-int WAVE_SELECT_KNOB = tempKnobFunction(0,7);
+int LFO2_WAVE_SELECT = tempKnobFunction(3,7);
 
 // define routing
 int LFO1_TO_VCA = 0;
@@ -371,6 +372,8 @@ float WAVESHAPE_EXAMPLE[17] = {
   0.25
 };
 
+bool filterEnvOn = true;
+
 void setup() {
   randomSeed(analogRead(14)); // i think 14 is fine?
   
@@ -379,6 +382,7 @@ void setup() {
   sgtl5000_1.volume(0.5);
 
   Serial.begin(9600);
+  Serial.println("initialised");
 
   // init LED pins
   for(int i=0;i<6;i++) {
@@ -459,6 +463,8 @@ void setup() {
   filterModMixers[4] = &filterModMixer5;
   filterModMixers[5] = &filterModMixer6;
 
+  Serial.println("debug 1");
+
   paramKnobs[FILTER_CUTOFF_KNOB].init(1, 10000, 500, ParamKnob::QUADRATIC_RESPONSE);
   paramKnobs[FILTER_RESONANCE_KNOB].init(0.7, 10, 3, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FILTER_ATTACK_KNOB].init(0, 1000, 5, ParamKnob::QUADRATIC_RESPONSE);
@@ -484,21 +490,28 @@ void setup() {
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
+
+  Serial.println("debug 2");
   
   for(int i=0;i<18;i++) {
     oscillators[i]->begin(0.1,getFreq(44+5*i),getWaveform(waveSelect));
+    Serial.println("debug 4");
     envelopes[i]->attack(ampAttack);
     envelopes[i]->decay(ampDecay);
     envelopes[i]->sustain(ampSustain);
     envelopes[i]->release(ampRelease);
+    Serial.println("debug 5");
     if(i<6) {
       filters[i]->frequency(filterCutoff);
       filters[i]->resonance(filterResonance);
       filters[i]->octaveControl(5);
+      Serial.println("debug 6");
+      if(filterEnvOn) {
       filterEnvelopes[i]->attack(filterAttack);
       filterEnvelopes[i]->decay(filterDecay);
       filterEnvelopes[i]->sustain(filterSustain);
       filterEnvelopes[i]->release(filterRelease);
+      }
     }
   }
 
@@ -539,6 +552,8 @@ void setup() {
     startSound.play(AudioSampleLemmings);
     break;
   }
+
+  delay(3000);
   
 }
 
@@ -552,11 +567,13 @@ int loopTime = 80; // rough guess for first loop for now
 int loopCount = 0;
 int testNote = 0;
 int lastStringChange[6] = {0,0,0,0,0,0};
+int maxKnob = 32;
 void loop() {
 
   int capacitance;
   bool fretTouched;
   int stringPositions[6] = {0,0,0,0,0,0};
+  int previousStringPositions[6] = {0,0,0,0,0,0};
   bool stringTouched;
   int digitalReading;
 
@@ -565,8 +582,7 @@ void loop() {
   loopCount = (loopCount + 1) % 200;
   if(loopCount == 0) testNote = (testNote + 1) % 6;
 
-  // just first 8 knobs until everything is wired up
-  for(int i=0;i<8;i++) {
+  for(int i=0;i<maxKnob;i++) {
     paramKnobs[i].isActive = !safeMode;
   }
 
@@ -616,7 +632,7 @@ void loop() {
         
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
-          Serial.print(j);
+          /*Serial.print(j);
           Serial.print("\t");
           Serial.print(thisString);
           Serial.print("\t");
@@ -626,7 +642,7 @@ void loop() {
           for(int k=0;k<8;k++) {
             Serial.print(FRET_LOOKUP[FRET_MUX_GROUPS[8]][k]);
           }
-          Serial.println("");
+          Serial.println("");*/
         }
       }
 
@@ -647,10 +663,11 @@ void loop() {
                   envelopes[thisString+k*6]->noteOff();
                   nextRelease[thisString+k*6]=-1;
                 }
-                filterEnvelopes[thisString]->noteOff();
+                //filterEnvelopes[thisString]->noteOff();
                 nextFilterRelease[thisString]=-1;
               } else {
                 // schedule notes
+                stringLights[thisString] = 255;
                 for(int k=0;k<3;k++) {
                   nextNote[thisString+k*6] = millis() + k*octaveDelay;
                   nextRelease[thisString+k*6]=-1;
@@ -665,7 +682,7 @@ void loop() {
               envelopes[thisString+k*6]->noteOn();
               nextRelease[thisString+k*6] = millis() + ampAttack + ampDecay;
               if(k==0) {
-                filterEnvelopes[thisString]->noteOn();
+                //filterEnvelopes[thisString]->noteOn();
                 nextFilterRelease[thisString] = millis() + filterAttack + filterDecay;
               }
               nextNote[thisString+k*6] = -1;
@@ -675,7 +692,7 @@ void loop() {
             }
           }
           if(nextFilterRelease[thisString]!=-1 && millis()>=nextFilterRelease[thisString]) {
-            filterEnvelopes[thisString]->noteOff();
+            //filterEnvelopes[thisString]->noteOff();
             nextFilterRelease[thisString]=-1;
           }
         }
@@ -686,8 +703,8 @@ void loop() {
       }
 
       if(j<4) {
-        paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
-        //if(paramKnobs[j*8+i].isChanged() && j==0) Serial.println(j*8+i);
+        if(j*8+i<maxKnob) paramKnobs[j*8+i].setValue(analogRead(ANALOG_SENSOR_PINS[j]));
+        //if(paramKnobs[j*8+i].isChanged()) Serial.println(j*8+i);
       }
     }
 
@@ -703,8 +720,8 @@ void loop() {
       break;
 
       case 2:
-      safeMode = digitalReading;
-      safeMode = true;
+      //safeMode = digitalReading;
+      //safeMode = true;
       break;
 
       case 3:
@@ -712,6 +729,12 @@ void loop() {
       break;
     }
   }
+
+  for(int i=0;i<6;i++) {
+    //Serial.print(stringPositions[i]);
+    //Serial.print("\t");
+  }
+  //Serial.println("");
 
   // record glitch data
   while(glitchRecord.available()) {
@@ -803,8 +826,8 @@ void loop() {
       currentFrequencies[i] -= amountToChange;
     }
     oscillators[i]->frequency(whammy*coarseTuning*fineTuning*currentFrequencies[i]);
-    oscillators[i+6]->frequency(2*whammy*currentFrequencies[i]);
-    oscillators[i+12]->frequency(4*whammy*currentFrequencies[i]);
+    oscillators[i+6]->frequency(2*whammy*coarseTuning*fineTuning*currentFrequencies[i]);
+    oscillators[i+12]->frequency(4*whammy*coarseTuning*fineTuning*currentFrequencies[i]);
     if(waveSelect==4) {
       oscillators[i]->pulseWidth(oscPulseWidth);
       oscillators[i+6]->pulseWidth(oscPulseWidth);
@@ -819,20 +842,25 @@ void loop() {
     // filters
     filters[i]->frequency(filterCutoff);
     filters[i]->resonance(filterResonance);
+    if(filterEnvOn){
     filterEnvelopes[i]->attack(filterAttack);
     filterEnvelopes[i]->decay(filterDecay);
     filterEnvelopes[i]->sustain(filterSustain);
     filterEnvelopes[i]->release(filterRelease);
+    }
     filterModMixers[i]->gain(0, filterEnvelopeLevel);
     filterModMixers[i]->gain(1, lfo1Dest==LFO1_TO_VCF?lfo1Level:0);
 
     // fade LEDs
     if(stringLights[i]>0) {
-      stringLights[i] -= 10; // this will need to be linked to loop time
+      stringLights[i] -= 1; // this will need to be linked to loop time
       analogWrite(STRING_LIGHT_PINS[i], stringLights[i]);
     } else {
       digitalWrite(STRING_LIGHT_PINS[i], LOW);
     }
+
+    // record string positions for next time
+    previousStringPositions[i] = stringPositions[i];
   }
   timeTotal = millis() - timeStart;
   loopTime = timeTotal;
