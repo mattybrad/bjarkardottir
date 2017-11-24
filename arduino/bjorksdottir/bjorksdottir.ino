@@ -202,7 +202,7 @@ int PALM_PIN = 30;
 int STRING_PIN = 17;
 int FRET_PIN = 16;
 int EXTRA_FRET_MUX_PIN = 25;
-int KILL_SWITCH_PIN = 24;
+int KILL_SWITCH_PIN = 12;
 int KILL_SWITCH_LIGHT_PIN = 10;
 int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int FRET_MUX_GROUPS[9] = {7,6,3,8,1,5,2,4,0}; // the neck is wired confusingly - this sorts out which multiplexer to read from
@@ -234,22 +234,23 @@ int AMP_ATTACK_KNOB = tempKnobFunction(1,0);
 int AMP_DECAY_KNOB = tempKnobFunction(1,1);
 int AMP_SUSTAIN_KNOB = tempKnobFunction(1,2);
 int AMP_RELEASE_KNOB = tempKnobFunction(1,3);
-int AMP_RELEASE2_KNOB = tempKnobFunction(1,4);
+int FINE_TUNING_KNOB = tempKnobFunction(1,4);
 int DISTORTION_KNOB = tempKnobFunction(1,5);
 int BIT_CRUSH_RESOLUTION_KNOB = tempKnobFunction(1,6);
 int BIT_CRUSH_RATE_KNOB = tempKnobFunction(1,7);
 int VOLUME_KNOB = tempKnobFunction(2,0);
-int FINE_TUNING_KNOB = tempKnobFunction(2,1);
+// 2,1 not working or not connected?
+int AMP_RELEASE2_KNOB = tempKnobFunction(2,1); // not in use?
 int COARSE_TUNING_KNOB = tempKnobFunction(2,2);
 int PORTAMENTO_KNOB = tempKnobFunction(2,3);
-int LFO1_FREQUENCY_KNOB = tempKnobFunction(3,0);
-int LFO2_FREQUENCY_KNOB = tempKnobFunction(3,1);
-int LFO1_LEVEL_KNOB = tempKnobFunction(3,2);
-int LFO2_LEVEL_KNOB = tempKnobFunction(3,3);
-int WHAMMY_KNOB = tempKnobFunction(3,4);
-int OCTAVE_FADE_KNOB = tempKnobFunction(3,5);
-int OCTAVE_DELAY_KNOB = tempKnobFunction(3,6);
-int LFO2_WAVE_SELECT = tempKnobFunction(3,7);
+int LFO1_FREQUENCY_KNOB = tempKnobFunction(2,4);
+int LFO2_FREQUENCY_KNOB = tempKnobFunction(2,5);
+int LFO1_LEVEL_KNOB = tempKnobFunction(3,0);
+int LFO2_LEVEL_KNOB = tempKnobFunction(3,1);
+int WHAMMY_KNOB = tempKnobFunction(3,2);
+int OCTAVE_FADE_KNOB = tempKnobFunction(3,3);
+int OCTAVE_DELAY_KNOB = tempKnobFunction(3,4);
+int LFO2_WAVE_SELECT = tempKnobFunction(3,5);
 
 // define routing
 int LFO1_TO_VCA = 0;
@@ -353,23 +354,23 @@ AudioMixer4* stringMixers[6];
 AudioMixer4* filterModMixers[6];
 
 float WAVESHAPE_EXAMPLE[17] = {
-  -0.25,
-  -0.25,
-  -0.2,
-  -0.2,
-  -0.2,
-  -0.2,
-  -0.15,
+  -0.14,
+  -0.14,
+  -0.14,
+  -0.14,
+  -0.14,
+  -0.14,
+  -0.13,
   -0.1,
   0,
   0.1,
-  0.15,
-  0.2,
-  0.2,
-  0.2,
-  0.2,
-  0.25,
-  0.25
+  0.13,
+  0.14,
+  0.14,
+  0.14,
+  0.14,
+  0.14,
+  0.14
 };
 
 bool filterEnvOn = true;
@@ -490,6 +491,7 @@ void setup() {
   paramKnobs[VOLUME_KNOB].init(0, 1, 0.5, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[COARSE_TUNING_KNOB].init(0.5, 2, 1, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[FINE_TUNING_KNOB].init(0.9, 1.1, 1, ParamKnob::LINEAR_RESPONSE);
+  paramKnobs[DISTORTION_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
 
   Serial.println("debug 2");
   
@@ -532,7 +534,8 @@ void setup() {
 
   //glitchRecord.begin();
   
-  switch(random(6)) {
+  //switch(random(6)) {
+  switch(0) {
     case 0:
     startSound.play(AudioSampleSega);
     break;
@@ -585,6 +588,7 @@ void loop() {
   for(int i=0;i<maxKnob;i++) {
     paramKnobs[i].isActive = !safeMode;
   }
+  paramKnobs[LFO2_WAVE_SELECT].isActive = false;
 
   // 9 iterations, 1 for each multiplexer
   // yellow wires
@@ -663,7 +667,7 @@ void loop() {
                   envelopes[thisString+k*6]->noteOff();
                   nextRelease[thisString+k*6]=-1;
                 }
-                //filterEnvelopes[thisString]->noteOff();
+                filterEnvelopes[thisString]->noteOff();
                 nextFilterRelease[thisString]=-1;
               } else {
                 // schedule notes
@@ -682,7 +686,7 @@ void loop() {
               envelopes[thisString+k*6]->noteOn();
               nextRelease[thisString+k*6] = millis() + ampAttack + ampDecay;
               if(k==0) {
-                //filterEnvelopes[thisString]->noteOn();
+                filterEnvelopes[thisString]->noteOn();
                 nextFilterRelease[thisString] = millis() + filterAttack + filterDecay;
               }
               nextNote[thisString+k*6] = -1;
@@ -692,12 +696,12 @@ void loop() {
             }
           }
           if(nextFilterRelease[thisString]!=-1 && millis()>=nextFilterRelease[thisString]) {
-            //filterEnvelopes[thisString]->noteOff();
+            filterEnvelopes[thisString]->noteOff();
             nextFilterRelease[thisString]=-1;
           }
         }
-        killSwitch = digitalRead(KILL_SWITCH_PIN);
-        killSwitch = false;
+        killSwitch = !digitalRead(KILL_SWITCH_PIN);
+        //killSwitch = false;
         stringGroupMixerMaster.gain(0,killSwitch?0:1);
         stringGroupMixerMaster.gain(1,killSwitch?0:1);
       }
@@ -767,7 +771,8 @@ void loop() {
   mainVolume = paramKnobs[VOLUME_KNOB].getCurrentValue();
   coarseTuning = paramKnobs[COARSE_TUNING_KNOB].getCurrentValue();
   fineTuning = paramKnobs[FINE_TUNING_KNOB].getCurrentValue();
-
+  distortionLevel = paramKnobs[DISTORTION_KNOB].getCurrentValue();
+  
   // do stuff with parameters
   waveSelectPrevious = waveSelect;
   waveSelect = floor(waveSelectRaw);
