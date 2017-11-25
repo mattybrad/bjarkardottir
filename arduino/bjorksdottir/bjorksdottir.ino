@@ -383,6 +383,8 @@ void setup() {
   AudioMemory(50);
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
+  sgtl5000_1.lineOutLevel(31);
+  finalMixer.gain(2,0.2);
 
   Serial.begin(9600);
   Serial.println("initialised");
@@ -482,8 +484,8 @@ void setup() {
   paramKnobs[BIT_CRUSH_RATE_KNOB].init(1, 44100, 44100, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
-  paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 10000, 2, ParamKnob::CUBIC_RESPONSE);
-  paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 10000, 3, ParamKnob::CUBIC_RESPONSE);
+  paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 10000, 2, ParamKnob::HEXIC_RESPONSE);
+  paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 10000, 3, ParamKnob::HEXIC_RESPONSE);
   paramKnobs[LFO2_WAVE_SELECT].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0.25, ParamKnob::LINEAR_RESPONSE);
@@ -718,9 +720,9 @@ void loop() {
 
     // toggle switches
     digitalReading = digitalRead(DIGITAL_SENSOR_PIN);
-    // from left to right, ?, 4, 1, ?, ?
+    // from left to right, 6, 4, 1, ?, ?
     switch(i) {
-      case 1:
+      case 6:
       lfo1Dest = digitalReading ? LFO1_TO_VCA : LFO1_TO_VCF;
       break;
 
@@ -790,8 +792,8 @@ void loop() {
   bitcrusher1.sampleRate(bitCrushRate);
   distortionMixer.gain(0,distortionLevel);
   distortionMixer.gain(1,1-distortionLevel);
-  finalMixer.gain(0,glitchMode?0:mainVolume);
-  finalMixer.gain(1,glitchMode?mainVolume:0);
+  finalMixer.gain(0,glitchMode?0:mainVolume*0.3);
+  finalMixer.gain(1,glitchMode?mainVolume*0.3:0);
   finalMixer.gain(2,0.3*mainVolume);
   if(lfoWaveSelect!=lfoWaveSelectPrevious) lfo2.begin(getWaveform(lfoWaveSelect));
   lfo1.frequency(lfo1Frequency);
