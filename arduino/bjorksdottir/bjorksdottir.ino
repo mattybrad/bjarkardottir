@@ -222,35 +222,35 @@ int tempKnobFunction(int group, int pin) {
 
 // define knobs
 ParamKnob paramKnobs[32];
-int FILTER_CUTOFF_KNOB = tempKnobFunction(0,0);
-int FILTER_RESONANCE_KNOB = tempKnobFunction(0,1);
-int FILTER_ATTACK_KNOB = tempKnobFunction(0,2);
-int FILTER_DECAY_KNOB = tempKnobFunction(0,3);
-int FILTER_SUSTAIN_KNOB = tempKnobFunction(0,4);
-int FILTER_RELEASE_KNOB = tempKnobFunction(0,5);
-int FILTER_ENVELOPE_KNOB = tempKnobFunction(0,6);
-int WAVE_SELECT_KNOB = tempKnobFunction(0,7);
-int AMP_ATTACK_KNOB = tempKnobFunction(1,0);
-int AMP_DECAY_KNOB = tempKnobFunction(1,1);
-int AMP_SUSTAIN_KNOB = tempKnobFunction(1,2);
-int AMP_RELEASE_KNOB = tempKnobFunction(1,3);
-int FINE_TUNING_KNOB = tempKnobFunction(1,4);
-int DISTORTION_KNOB = tempKnobFunction(1,5);
-int BIT_CRUSH_RESOLUTION_KNOB = tempKnobFunction(1,6);
-int BIT_CRUSH_RATE_KNOB = tempKnobFunction(1,7);
-int VOLUME_KNOB = tempKnobFunction(2,0);
-// 2,1 not working or not connected?
+int FILTER_CUTOFF_KNOB = 11;
+int FILTER_RESONANCE_KNOB = 8;
+  int FILTER_ATTACK_KNOB = 3;
+  int FILTER_DECAY_KNOB = 0;
+  int FILTER_SUSTAIN_KNOB = 1;
+  int FILTER_RELEASE_KNOB = 2;
+  int FILTER_ENVELOPE_KNOB = 6;
+int WAVE_SELECT_KNOB = 28;
+int AMP_ATTACK_KNOB = 13;
+int AMP_DECAY_KNOB = 15;
+int AMP_SUSTAIN_KNOB = 14;
+int AMP_RELEASE_KNOB = 12;
+int COARSE_TUNING_KNOB = 18;
+int FINE_TUNING_KNOB = 19;
+int DISTORTION_KNOB = 7; // distortion is the least good effect on the guitar! replace if short of knobs
+int BIT_CRUSH_RESOLUTION_KNOB = 5;
+int BIT_CRUSH_RATE_KNOB = 21;
+int VOLUME_KNOB = 10;
+int PORTAMENTO_KNOB = 9;
+int LFO1_FREQUENCY_KNOB = 26;
+int LFO2_FREQUENCY_KNOB = 24;
+int LFO1_LEVEL_KNOB = 25;
+int LFO2_LEVEL_KNOB = 27;
+int WHAMMY_KNOB = 16;
+int OCTAVE_FADE_KNOB = 20;
+int OCTAVE_DELAY_KNOB = 4;
+  
+int LFO2_WAVE_SELECT = tempKnobFunction(3,5); // not in use
 int AMP_RELEASE2_KNOB = tempKnobFunction(2,1); // not in use?
-int COARSE_TUNING_KNOB = tempKnobFunction(2,2);
-int PORTAMENTO_KNOB = tempKnobFunction(2,3);
-int LFO1_FREQUENCY_KNOB = tempKnobFunction(2,4);
-int LFO2_FREQUENCY_KNOB = tempKnobFunction(2,5);
-int LFO1_LEVEL_KNOB = tempKnobFunction(3,0);
-int LFO2_LEVEL_KNOB = tempKnobFunction(3,1);
-int WHAMMY_KNOB = tempKnobFunction(3,2);
-int OCTAVE_FADE_KNOB = tempKnobFunction(3,3);
-int OCTAVE_DELAY_KNOB = tempKnobFunction(3,4);
-int LFO2_WAVE_SELECT = tempKnobFunction(3,5);
 
 // define routing
 int LFO1_TO_VCA = 0;
@@ -772,6 +772,12 @@ void loop() {
   coarseTuning = paramKnobs[COARSE_TUNING_KNOB].getCurrentValue();
   fineTuning = paramKnobs[FINE_TUNING_KNOB].getCurrentValue();
   distortionLevel = paramKnobs[DISTORTION_KNOB].getCurrentValue();
+
+  Serial.println(filterAttack);
+  Serial.println(filterDecay);
+  Serial.println(filterSustain);
+  Serial.println(filterEnvelopeLevel);
+  Serial.println(" ");
   
   // do stuff with parameters
   waveSelectPrevious = waveSelect;
