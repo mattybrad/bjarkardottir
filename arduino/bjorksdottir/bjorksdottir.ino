@@ -206,7 +206,7 @@ int FRET_PIN = 16;
 int EXTRA_FRET_MUX_PIN = 25;
 int KILL_SWITCH_PIN = 12;
 int KILL_SWITCH_LIGHT_PIN = 10;
-int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
+int STRING_MUX_PINS[8] = {4,3,2,5,0,6,1,7};
 int FRET_MUX_GROUPS[9] = {7,6,3,8,1,5,2,4,0}; // the neck is wired confusingly - this sorts out which multiplexer to read from
 int STRING_LIGHT_PINS[6] = {21,20,38,37,36,35};
 
@@ -214,11 +214,11 @@ int STRING_LIGHT_PINS[6] = {21,20,38,37,36,35};
 ParamKnob paramKnobs[32];
 int FILTER_CUTOFF_KNOB = 11;
 int FILTER_RESONANCE_KNOB = 8;
-  int FILTER_ATTACK_KNOB = 3;
-  int FILTER_DECAY_KNOB = 0;
-  int FILTER_SUSTAIN_KNOB = 1;
-  int FILTER_RELEASE_KNOB = 2;
-  int FILTER_ENVELOPE_KNOB = 6;
+int FILTER_ATTACK_KNOB = 3;
+int FILTER_DECAY_KNOB = 0;
+int FILTER_SUSTAIN_KNOB = 1;
+int FILTER_RELEASE_KNOB = 2;
+int FILTER_ENVELOPE_KNOB = 6;
 int WAVE_SELECT_KNOB = 28;
 int AMP_ATTACK_KNOB = 13;
 int AMP_DECAY_KNOB = 15;
