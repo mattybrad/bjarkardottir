@@ -210,18 +210,6 @@ int STRING_MUX_PINS[8] = {4,3,2,5,1,6,0,7};
 int FRET_MUX_GROUPS[9] = {7,6,3,8,1,5,2,4,0}; // the neck is wired confusingly - this sorts out which multiplexer to read from
 int STRING_LIGHT_PINS[6] = {21,20,38,37,36,35};
 
-int activeKnobGroup = 2; // 0 ok, 1 ok, 2 bad, 3 ok
-int tempKnobPin = 8;
-int tempKnobFunction(int group, int pin) {
-  return group*8+pin; // all knobs wired up, should be fine now?
-  /*if(group == activeKnobGroup) {
-    return pin;
-  } else {
-    tempKnobPin ++;
-    return tempKnobPin;
-  }*/
-}
-
 // define knobs
 ParamKnob paramKnobs[32];
 int FILTER_CUTOFF_KNOB = 11;
@@ -251,14 +239,14 @@ int WHAMMY_KNOB = 16;
 int OCTAVE_FADE_KNOB = 20;
 int OCTAVE_DELAY_KNOB = 4;
   
-int LFO2_WAVE_SELECT = tempKnobFunction(3,5); // not in use
-int AMP_RELEASE2_KNOB = tempKnobFunction(2,1); // not in use?
+//int LFO2_WAVE_SELECT = tempKnobFunction(3,5); // not in use
+//int AMP_RELEASE2_KNOB = tempKnobFunction(2,1); // not in use?
 
 // define routing
 int LFO1_TO_VCA = 0;
 int LFO1_TO_VCF = 1;
 int LFO2_TO_VCA = 1;
-int LFO2_TO_LFO1 = 0;
+int LFO2_TO_PITCH = 0;
 
 // lookup tables
 int FRET_LOOKUP[NUM_FRET_GROUPS][8] = {
@@ -312,7 +300,7 @@ float ampDecay = 50;
 float ampSustain = 0.3;
 bool useAmpReleaseLong = true;
 float ampReleaseLong = 3000; // for when a string is plucked
-float ampReleaseShort = 200; // for when a string is muted
+float ampReleaseShort = 0; // for when a string is muted
 float ampRelease = 50;
 float filterAttack = 2000;
 float filterDecay = 2000;
@@ -486,7 +474,7 @@ void setup() {
   paramKnobs[LFO2_LEVEL_KNOB].init(0, 1, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[LFO1_FREQUENCY_KNOB].init(0.5, 10000, 2, ParamKnob::HEXIC_RESPONSE);
   paramKnobs[LFO2_FREQUENCY_KNOB].init(0.5, 10000, 3, ParamKnob::HEXIC_RESPONSE);
-  paramKnobs[LFO2_WAVE_SELECT].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
+  //paramKnobs[LFO2_WAVE_SELECT].init(0, 4.99, 0, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[WHAMMY_KNOB].init(0, 1, 1, ParamKnob::WHAMMY_RESPONSE); // slightly weird hack involving init parameters not matching actual values due to funky response curve
   paramKnobs[OCTAVE_FADE_KNOB].init(0, 1, 0.25, ParamKnob::LINEAR_RESPONSE);
   paramKnobs[OCTAVE_DELAY_KNOB].init(0, 1000, 0, ParamKnob::QUADRATIC_RESPONSE);
@@ -577,14 +565,16 @@ int testNote = 0;
 int lastStringChange[6] = {0,0,0,0,0,0};
 int maxKnob = 32;
 float pitchModulation = 1.0;
+bool stringPullOff[6] = {false, false, false, false, false, false};
+int previousStringPositions[6] = {0,0,0,0,0,0};
 void loop() {
 
   int capacitance;
   bool fretTouched;
   int stringPositions[6] = {0,0,0,0,0,0};
-  int previousStringPositions[6] = {0,0,0,0,0,0};
   bool stringTouched;
   int digitalReading;
+  bool stringTriggered[6] = {false, false, false, false, false, false};
 
   timeStart = millis();
 
@@ -594,7 +584,7 @@ void loop() {
   for(int i=0;i<maxKnob;i++) {
     paramKnobs[i].isActive = !safeMode;
   }
-  paramKnobs[LFO2_WAVE_SELECT].isActive = false;
+  //paramKnobs[LFO2_WAVE_SELECT].isActive = false;
 
   // 9 iterations, 1 for each multiplexer
   // yellow wires
@@ -642,17 +632,6 @@ void loop() {
         
         if(fretTouched) {
           stringPositions[thisString] = max(stringPositions[thisString], thisFret);
-          /*Serial.print(j);
-          Serial.print("\t");
-          Serial.print(thisString);
-          Serial.print("\t");
-          Serial.println(thisFret);
-          Serial.print("\t");
-          Serial.println(FRET_MUX_GROUPS[8]);
-          for(int k=0;k<8;k++) {
-            Serial.print(FRET_LOOKUP[FRET_MUX_GROUPS[8]][k]);
-          }
-          Serial.println("");*/
         }
       }
 
@@ -662,11 +641,11 @@ void loop() {
           // new logic goes here
           if(millis()-lastStringChange[thisString] > 30) {
             stringTouched = !digitalRead(STRING_PIN);
-            if(stringTouched != strings[thisString]) {
+            if(stringTouched != strings[thisString] || stringPullOff[thisString]) {
               // change detected
               lastStringChange[thisString] = millis();
               strings[thisString] = stringTouched;
-              if(stringTouched) {
+              if(stringTouched || stringPullOff[thisString]) {
                 // mute string
                 for(int k=0;k<3;k++) {
                   envelopes[thisString+k*6]->release(ampReleaseShort);
@@ -692,8 +671,11 @@ void loop() {
               envelopes[thisString+k*6]->noteOn();
               nextRelease[thisString+k*6] = millis() + ampAttack + ampDecay;
               if(k==0) {
+                // trigger filter envelope
                 filterEnvelopes[thisString]->noteOn();
                 nextFilterRelease[thisString] = millis() + filterAttack + filterDecay;
+                // record that note was triggered this loop
+                stringTriggered[thisString] = true; // not actually used just yet though
               }
               nextNote[thisString+k*6] = -1;
             } else if(nextRelease[thisString+k*6]!=-1 && millis()>=nextRelease[thisString+k*6]) {
@@ -727,7 +709,7 @@ void loop() {
       break;
 
       case 4:
-      lfo2Dest = digitalReading ? LFO2_TO_VCA : LFO2_TO_LFO1;
+      lfo2Dest = digitalReading ? LFO2_TO_VCA : LFO2_TO_PITCH;
       break;
 
       case 2:
@@ -774,7 +756,7 @@ void loop() {
   octaveFade = paramKnobs[OCTAVE_FADE_KNOB].getCurrentValue();
   octaveDelay = paramKnobs[OCTAVE_DELAY_KNOB].getCurrentValue();
   waveSelectRaw = paramKnobs[WAVE_SELECT_KNOB].getCurrentValue();
-  lfoWaveSelectRaw = paramKnobs[LFO2_WAVE_SELECT].getCurrentValue();
+  lfoWaveSelectRaw = 0;
   mainVolume = paramKnobs[VOLUME_KNOB].getCurrentValue();
   coarseTuning = paramKnobs[COARSE_TUNING_KNOB].getCurrentValue();
   fineTuning = paramKnobs[FINE_TUNING_KNOB].getCurrentValue();
@@ -811,14 +793,14 @@ void loop() {
   vcaSignalMixer.gain(2,vcaMultiplier*vcaLFO2Level);
 
   // lfo freq mod
-  lfo1FreqModMixer.gain(0,lfo2Dest==LFO2_TO_LFO1?lfo2Level:0);
+  lfo1FreqModMixer.gain(0,0);
 
   // lfo pitch mod
   if(queue1.available() > 0) {
     pitchModulation = 1 + lfo2Level * lfo2Level * lfo2Level * queue1.readBuffer()[0] / 32768.0;
     queue1.freeBuffer();
   }
-  if(lfo2Dest != LFO2_TO_LFO1) pitchModulation = 1;
+  if(lfo2Dest != LFO2_TO_PITCH) pitchModulation = 1;
   
   // set frequency of oscillators
   bool portamentoActive = portamento < 50;
@@ -833,6 +815,7 @@ void loop() {
     }
     
     // the 0.0594631 * frequency term is to get the interval between two semitones in Hz
+    stringPullOff[i] = (stringPositions[i] == 0 && previousStringPositions[i] > 0);
     amountToChange = 0.0594631 * currentFrequencies[i] * portamento * loopTime * 0.001;
     targetFrequencies[i] = getFreq(20+stringPositions[i]+guitarTuning[i]);
     
